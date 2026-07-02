@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/enums.dart';
 import '../models/pet.dart';
+import '../models/stats.dart';
 import '../state/app_state.dart';
 import '../widgets/number_field.dart';
 import '../widgets/pet_card.dart';
@@ -84,6 +85,12 @@ class _PetsScreenState extends State<PetsScreen> {
                   DropdownMenuItem(value: _PetSort.health, child: Text('Health')),
                 ],
               ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: () => _batchInsert(context, state),
+                icon: const Icon(Icons.playlist_add, size: 18),
+                label: const Text('Batch insert'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -126,6 +133,15 @@ class _PetsScreenState extends State<PetsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _batchInsert(BuildContext context, AppState state) async {
+    final result = await showDialog<List<Pet>>(
+      context: context,
+      builder: (_) => const _PetBatchInsertDialog(),
+    );
+    if (result == null || result.isEmpty) return;
+    state.addPets(result);
   }
 
   Future<void> _edit(BuildContext context, AppState state, Pet? pet) async {
@@ -264,5 +280,229 @@ class _PetEditorDialogState extends State<_PetEditorDialog> {
         ),
       ],
     );
+  }
+}
+
+/// One row of the batch insert table: everything needed to build a [Pet].
+class _PetBatchRow {
+  Rarity rarity = Rarity.common;
+  int level = 1;
+  PetType type = PetType.balanced;
+  double mainDamage = 0;
+  double mainHealth = 0;
+  SubstatType? sub1Type;
+  double sub1Value = 0;
+  SubstatType? sub2Type;
+  double sub2Value = 0;
+
+  /// Fills in the known base stats for combinations the game always rolls the
+  /// same way, so the user only has to pick rarity + type.
+  void applyPreset() {
+    if (rarity == Rarity.legendary && type == PetType.attack) {
+      mainDamage = 234000;
+      mainHealth = 624000;
+    } else if (rarity == Rarity.legendary && type == PetType.health) {
+      mainDamage = 156000;
+      mainHealth = 1240000;
+    }
+  }
+
+  Pet toPet() => Pet(
+        id: '',
+        type: type,
+        rarity: rarity,
+        level: level,
+        mainDamage: mainDamage,
+        mainHealth: mainHealth,
+        substats: [
+          if (sub1Type != null) Substat(type: sub1Type!, value: sub1Value),
+          if (sub2Type != null) Substat(type: sub2Type!, value: sub2Value),
+        ],
+      );
+}
+
+/// Table-based batch insert: one row per pet, one column per option. Used
+/// instead of a file import so pasted/typed rows can be reviewed before adding
+/// them all to the inventory at once.
+class _PetBatchInsertDialog extends StatefulWidget {
+  const _PetBatchInsertDialog();
+
+  @override
+  State<_PetBatchInsertDialog> createState() => _PetBatchInsertDialogState();
+}
+
+class _PetBatchInsertDialogState extends State<_PetBatchInsertDialog> {
+  final List<_PetBatchRow> _rows = [_PetBatchRow()];
+
+  void _addRow() => setState(() => _rows.add(_PetBatchRow()));
+
+  void _removeRow(int index) => setState(() => _rows.removeAt(index));
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Batch insert pets'),
+      content: SizedBox(
+        width: 900,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 12,
+                  columns: const [
+                    DataColumn(label: Text('Rarity')),
+                    DataColumn(label: Text('Level')),
+                    DataColumn(label: Text('Type')),
+                    DataColumn(label: Text('Main Damage')),
+                    DataColumn(label: Text('Main Health')),
+                    DataColumn(label: Text('Substat 1')),
+                    DataColumn(label: Text('Value')),
+                    DataColumn(label: Text('Substat 2')),
+                    DataColumn(label: Text('Value')),
+                    DataColumn(label: Text('')),
+                  ],
+                  rows: [
+                    for (var i = 0; i < _rows.length; i++) _buildRow(i),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _addRow,
+                icon: const Icon(Icons.add),
+                label: const Text('Add row'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(
+            context,
+            [for (final r in _rows) r.toPet()],
+          ),
+          child: Text('Insert ${_rows.length}'),
+        ),
+      ],
+    );
+  }
+
+  DataRow _buildRow(int i) {
+    final row = _rows[i];
+    return DataRow(cells: [
+      DataCell(SizedBox(
+        width: 120,
+        child: DropdownButtonFormField<Rarity>(
+          initialValue: row.rarity,
+          isExpanded: true,
+          items: [
+            for (final r in Rarity.values)
+              DropdownMenuItem(value: r, child: Text(r.label)),
+          ],
+          onChanged: (r) => setState(() {
+            row.rarity = r ?? row.rarity;
+            row.applyPreset();
+          }),
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 70,
+        child: NumberField(
+          label: '',
+          value: row.level.toDouble(),
+          allowShorthand: false,
+          onChanged: (v) => row.level = v.round().clamp(1, 999).toInt(),
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 120,
+        child: DropdownButtonFormField<PetType>(
+          initialValue: row.type,
+          isExpanded: true,
+          items: [
+            for (final t in PetType.values)
+              DropdownMenuItem(value: t, child: Text(t.label)),
+          ],
+          onChanged: (t) => setState(() {
+            row.type = t ?? row.type;
+            row.applyPreset();
+          }),
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 100,
+        child: NumberField(
+          label: '',
+          value: row.mainDamage,
+          onChanged: (v) => row.mainDamage = v,
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 100,
+        child: NumberField(
+          label: '',
+          value: row.mainHealth,
+          onChanged: (v) => row.mainHealth = v,
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 130,
+        child: DropdownButtonFormField<SubstatType?>(
+          initialValue: row.sub1Type,
+          isExpanded: true,
+          items: [
+            const DropdownMenuItem(value: null, child: Text('None')),
+            for (final t in SubstatType.values)
+              DropdownMenuItem(value: t, child: Text(t.label)),
+          ],
+          onChanged: (t) => setState(() => row.sub1Type = t),
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 80,
+        child: NumberField(
+          label: '',
+          value: row.sub1Value,
+          allowShorthand: false,
+          suffix: row.sub1Type?.isPercent ?? false ? '%' : null,
+          onChanged: (v) => row.sub1Value = v,
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 130,
+        child: DropdownButtonFormField<SubstatType?>(
+          initialValue: row.sub2Type,
+          isExpanded: true,
+          items: [
+            const DropdownMenuItem(value: null, child: Text('None')),
+            for (final t in SubstatType.values)
+              DropdownMenuItem(value: t, child: Text(t.label)),
+          ],
+          onChanged: (t) => setState(() => row.sub2Type = t),
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 80,
+        child: NumberField(
+          label: '',
+          value: row.sub2Value,
+          allowShorthand: false,
+          suffix: row.sub2Type?.isPercent ?? false ? '%' : null,
+          onChanged: (v) => row.sub2Value = v,
+        ),
+      )),
+      DataCell(IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: _rows.length > 1 ? () => _removeRow(i) : null,
+      )),
+    ]);
   }
 }

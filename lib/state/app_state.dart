@@ -92,6 +92,14 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Adds multiple pets at once (batch insert), each given a fresh id.
+  void addPets(List<Pet> pets) {
+    if (pets.isEmpty) return;
+    _pets = [..._pets, for (final p in pets) p.copyWith(id: _newId())];
+    _persistPets();
+    notifyListeners();
+  }
+
   void updatePet(Pet pet) {
     _pets = [for (final p in _pets) if (p.id == pet.id) pet else p];
     _persistPets();
@@ -132,6 +140,14 @@ class AppState extends ChangeNotifier {
 
   void addMount(Mount mount) {
     _mounts = [..._mounts, mount];
+    _persistMounts();
+    notifyListeners();
+  }
+
+  /// Adds multiple mounts at once (batch insert), each given a fresh id.
+  void addMounts(List<Mount> mounts) {
+    if (mounts.isEmpty) return;
+    _mounts = [..._mounts, for (final m in mounts) m.copyWith(id: _newId())];
     _persistMounts();
     notifyListeners();
   }

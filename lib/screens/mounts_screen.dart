@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/enums.dart';
 import '../models/mount.dart';
+import '../models/stats.dart';
 import '../state/app_state.dart';
 import '../widgets/mount_card.dart';
 import '../widgets/number_field.dart';
@@ -77,6 +78,12 @@ class _MountsScreenState extends State<MountsScreen> {
                   DropdownMenuItem(value: _MountSort.health, child: Text('Health')),
                 ],
               ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: () => _batchInsert(context, state),
+                icon: const Icon(Icons.playlist_add, size: 18),
+                label: const Text('Batch insert'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -119,6 +126,15 @@ class _MountsScreenState extends State<MountsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _batchInsert(BuildContext context, AppState state) async {
+    final result = await showDialog<List<Mount>>(
+      context: context,
+      builder: (_) => const _MountBatchInsertDialog(),
+    );
+    if (result == null || result.isEmpty) return;
+    state.addMounts(result);
   }
 
   Future<void> _edit(BuildContext context, AppState state, Mount? mount) async {
@@ -241,5 +257,197 @@ class _MountEditorDialogState extends State<_MountEditorDialog> {
         ),
       ],
     );
+  }
+}
+
+/// One row of the batch insert table: everything needed to build a [Mount].
+class _MountBatchRow {
+  Rarity rarity = Rarity.common;
+  int level = 1;
+  double mainDamage = 0;
+  double mainHealth = 0;
+  SubstatType? sub1Type;
+  double sub1Value = 0;
+  SubstatType? sub2Type;
+  double sub2Value = 0;
+
+  Mount toMount() => Mount(
+        id: '',
+        rarity: rarity,
+        level: level,
+        mainDamage: mainDamage,
+        mainHealth: mainHealth,
+        substats: [
+          if (sub1Type != null) Substat(type: sub1Type!, value: sub1Value),
+          if (sub2Type != null) Substat(type: sub2Type!, value: sub2Value),
+        ],
+      );
+}
+
+/// Table-based batch insert: one row per mount, one column per option. Used
+/// instead of a file import so pasted/typed rows can be reviewed before adding
+/// them all to the inventory at once.
+class _MountBatchInsertDialog extends StatefulWidget {
+  const _MountBatchInsertDialog();
+
+  @override
+  State<_MountBatchInsertDialog> createState() =>
+      _MountBatchInsertDialogState();
+}
+
+class _MountBatchInsertDialogState extends State<_MountBatchInsertDialog> {
+  final List<_MountBatchRow> _rows = [_MountBatchRow()];
+
+  void _addRow() => setState(() => _rows.add(_MountBatchRow()));
+
+  void _removeRow(int index) => setState(() => _rows.removeAt(index));
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Batch insert mounts'),
+      content: SizedBox(
+        width: 820,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 12,
+                  columns: const [
+                    DataColumn(label: Text('Rarity')),
+                    DataColumn(label: Text('Level')),
+                    DataColumn(label: Text('Main Damage')),
+                    DataColumn(label: Text('Main Health')),
+                    DataColumn(label: Text('Substat 1')),
+                    DataColumn(label: Text('Value')),
+                    DataColumn(label: Text('Substat 2')),
+                    DataColumn(label: Text('Value')),
+                    DataColumn(label: Text('')),
+                  ],
+                  rows: [
+                    for (var i = 0; i < _rows.length; i++) _buildRow(i),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _addRow,
+                icon: const Icon(Icons.add),
+                label: const Text('Add row'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(
+            context,
+            [for (final r in _rows) r.toMount()],
+          ),
+          child: Text('Insert ${_rows.length}'),
+        ),
+      ],
+    );
+  }
+
+  DataRow _buildRow(int i) {
+    final row = _rows[i];
+    return DataRow(cells: [
+      DataCell(SizedBox(
+        width: 120,
+        child: DropdownButtonFormField<Rarity>(
+          initialValue: row.rarity,
+          isExpanded: true,
+          items: [
+            for (final r in Rarity.values)
+              DropdownMenuItem(value: r, child: Text(r.label)),
+          ],
+          onChanged: (r) => setState(() => row.rarity = r ?? row.rarity),
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 70,
+        child: NumberField(
+          label: '',
+          value: row.level.toDouble(),
+          allowShorthand: false,
+          onChanged: (v) => row.level = v.round().clamp(1, 999).toInt(),
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 100,
+        child: NumberField(
+          label: '',
+          value: row.mainDamage,
+          onChanged: (v) => row.mainDamage = v,
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 100,
+        child: NumberField(
+          label: '',
+          value: row.mainHealth,
+          onChanged: (v) => row.mainHealth = v,
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 130,
+        child: DropdownButtonFormField<SubstatType?>(
+          initialValue: row.sub1Type,
+          isExpanded: true,
+          items: [
+            const DropdownMenuItem(value: null, child: Text('None')),
+            for (final t in SubstatType.values)
+              DropdownMenuItem(value: t, child: Text(t.label)),
+          ],
+          onChanged: (t) => setState(() => row.sub1Type = t),
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 80,
+        child: NumberField(
+          label: '',
+          value: row.sub1Value,
+          allowShorthand: false,
+          suffix: row.sub1Type?.isPercent ?? false ? '%' : null,
+          onChanged: (v) => row.sub1Value = v,
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 130,
+        child: DropdownButtonFormField<SubstatType?>(
+          initialValue: row.sub2Type,
+          isExpanded: true,
+          items: [
+            const DropdownMenuItem(value: null, child: Text('None')),
+            for (final t in SubstatType.values)
+              DropdownMenuItem(value: t, child: Text(t.label)),
+          ],
+          onChanged: (t) => setState(() => row.sub2Type = t),
+        ),
+      )),
+      DataCell(SizedBox(
+        width: 80,
+        child: NumberField(
+          label: '',
+          value: row.sub2Value,
+          allowShorthand: false,
+          suffix: row.sub2Type?.isPercent ?? false ? '%' : null,
+          onChanged: (v) => row.sub2Value = v,
+        ),
+      )),
+      DataCell(IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: _rows.length > 1 ? () => _removeRow(i) : null,
+      )),
+    ]);
   }
 }
