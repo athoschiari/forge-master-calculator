@@ -148,7 +148,8 @@ class Dashboard extends StatelessWidget {
           title: 'Aggregated stats',
           rows: [
             for (final type in _statOrder)
-              _Row(type.label, _statValue(type, build.aggregate.sub(type))),
+              _Row(type.label,
+                  formatStatValue(type, build.aggregate.sub(type))),
           ],
         ),
         const SizedBox(height: 16),
@@ -213,14 +214,6 @@ class Dashboard extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _statValue(SubstatType type, double value) {
-    var text = value.toStringAsFixed(2);
-    if (text.contains('.')) {
-      text = text.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
-    }
-    return type.isPercent ? '$text%' : text;
   }
 }
 

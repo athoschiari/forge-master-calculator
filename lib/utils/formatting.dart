@@ -1,3 +1,4 @@
+import '../models/enums.dart';
 import '../models/pet.dart';
 import '../models/stats.dart';
 
@@ -20,13 +21,9 @@ String formatCompact(double value) {
   return '$sign${n.toStringAsFixed(1)}';
 }
 
-/// Formats a value already expressed in percentage points, e.g. 46.95 -> "47%".
-String formatPercentPoints(double points) {
-  if (points == points.roundToDouble()) {
-    return '${points.toStringAsFixed(0)}%';
-  }
-  return '${points.toStringAsFixed(1)}%';
-}
+/// Formats a value already expressed in percentage points, keeping full
+/// precision (no rounding) e.g. 5.99 -> "5.99%", 46.95 -> "46.95%".
+String formatPercentPoints(double points) => '${_trimDecimals(points)}%';
 
 /// Formats a signed delta with a leading + or - and compact magnitude.
 String formatDelta(double value) {
@@ -74,13 +71,14 @@ String formatSheetCompact(double value) {
   return value.toStringAsFixed(0);
 }
 
+/// Formats a raw substat value at full precision, percent or flat depending
+/// on how the type is rolled in game (see [SubstatType.isPercent]).
+String formatStatValue(SubstatType type, double value) =>
+    type.isPercent ? formatPercentPoints(value) : _trimDecimals(value);
+
 /// One substat rendered as text, e.g. "Lifesteal 18.2%" or "Attack speed 34".
-String formatSubstat(Substat substat) {
-  final value = substat.type.isPercent
-      ? formatPercentPoints(substat.value)
-      : _trimDecimals(substat.value);
-  return '${substat.type.label} $value';
-}
+String formatSubstat(Substat substat) =>
+    '${substat.type.label} ${formatStatValue(substat.type, substat.value)}';
 
 /// A comma-joined description of a list of substats, used to identify pets and
 /// mounts (which have no names in game). Falls back to the main stats when a
@@ -102,8 +100,11 @@ String describePet(Pet pet) {
       '${describePiece(substats: pet.substats, damage: pet.mainDamage, health: pet.mainHealth)}';
 }
 
+/// Renders a value at full precision, trimming only trailing zeros (never
+/// rounding away significant digits). 4 decimals comfortably covers every
+/// substat value the game or a spreadsheet import can produce.
 String _trimDecimals(double value) {
-  var text = value.toStringAsFixed(2);
+  var text = value.toStringAsFixed(4);
   if (text.contains('.')) {
     text = text.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
   }

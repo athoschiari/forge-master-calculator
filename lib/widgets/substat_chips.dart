@@ -29,8 +29,7 @@ class SubstatChips extends StatelessWidget {
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             label: Text(
-              '${s.type.label} '
-              '${s.type.isPercent ? formatPercentPoints(s.value) : s.value.toStringAsFixed(1)}',
+              formatSubstat(s),
               style: Theme.of(context).textTheme.labelMedium,
             ),
           ),
