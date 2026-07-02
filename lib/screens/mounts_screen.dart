@@ -51,7 +51,8 @@ class _MountsScreenState extends State<MountsScreen> {
     final state = context.watch<AppState>();
     final theme = Theme.of(context);
     final mounts = _visible(state.mounts);
-    final columns = MediaQuery.of(context).size.width > 900 ? 2 : 1;
+    final width = MediaQuery.of(context).size.width;
+    final columns = width > 1300 ? 3 : (width > 900 ? 2 : 1);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -114,7 +115,7 @@ class _MountsScreenState extends State<MountsScreen> {
               crossAxisCount: columns,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.9,
+              childAspectRatio: 2.6,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               children: [

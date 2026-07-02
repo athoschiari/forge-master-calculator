@@ -21,7 +21,7 @@ class GearScreen extends StatelessWidget {
     final state = context.watch<AppState>();
     final theme = Theme.of(context);
     final width = MediaQuery.of(context).size.width;
-    final columns = width > 900 ? 2 : 1;
+    final columns = width > 1300 ? 3 : (width > 900 ? 2 : 1);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -42,7 +42,7 @@ class GearScreen extends StatelessWidget {
           crossAxisCount: columns,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 2.4,
+          childAspectRatio: 3.2,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
           children: [

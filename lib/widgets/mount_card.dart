@@ -28,7 +28,7 @@ class MountCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -113,11 +113,15 @@ class _Main extends StatelessWidget {
       children: [
         Text(
           '$label ',
-          style: theme.textTheme.labelSmall?.copyWith(
+          style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        Text(formatCompact(value), style: theme.textTheme.titleSmall),
+        Text(
+          formatCompact(value),
+          style: theme.textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
+        ),
       ],
     );
   }
