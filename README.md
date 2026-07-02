@@ -1,6 +1,9 @@
 # Forge Master Optimizer
 
-A Flutter app that replaces the "Forge master master calculator" spreadsheet.
+A Flutter app that replaces the "Forge master master calculator" spreadsheet,
+originally created by **Thermo**. A copy of that base spreadsheet is kept at
+[`docs/base spreadsheet.xlsx`](docs/base%20spreadsheet.xlsx) for reference.
+
 It tracks your current gear, your pet and mount inventory, computes your build,
 and finds the best pet + mount loadout for three objectives:
 
