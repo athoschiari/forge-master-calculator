@@ -1,0 +1,111 @@
+import '../models/pet.dart';
+import '../models/stats.dart';
+
+/// Formats a raw number the way the spreadsheet displays it: compact with a
+/// k/m/b suffix. e.g. 1631547.94 -> "1.63M", 121000 -> "121K".
+String formatCompact(double value) {
+  final sign = value < 0 ? '-' : '';
+  final n = value.abs();
+
+  String withSuffix(double scaled, String suffix) {
+    if (scaled >= 100) return '$sign${scaled.toStringAsFixed(0)}$suffix';
+    if (scaled >= 10) return '$sign${scaled.toStringAsFixed(1)}$suffix';
+    return '$sign${scaled.toStringAsFixed(2)}$suffix';
+  }
+
+  if (n >= 1e9) return withSuffix(n / 1e9, 'B');
+  if (n >= 1e6) return withSuffix(n / 1e6, 'M');
+  if (n >= 1e3) return withSuffix(n / 1e3, 'K');
+  if (n == n.roundToDouble()) return '$sign${n.toStringAsFixed(0)}';
+  return '$sign${n.toStringAsFixed(1)}';
+}
+
+/// Formats a value already expressed in percentage points, e.g. 46.95 -> "47%".
+String formatPercentPoints(double points) {
+  if (points == points.roundToDouble()) {
+    return '${points.toStringAsFixed(0)}%';
+  }
+  return '${points.toStringAsFixed(1)}%';
+}
+
+/// Formats a signed delta with a leading + or - and compact magnitude.
+String formatDelta(double value) {
+  if (value == 0) return '0';
+  final prefix = value > 0 ? '+' : '-';
+  return '$prefix${formatCompact(value.abs())}';
+}
+
+/// Formats an attack interval in seconds, e.g. 1.1 -> "1.10s".
+String formatSeconds(double seconds) => '${seconds.toStringAsFixed(2)}s';
+
+/// Formats a number with thousands separators, like the spreadsheet, e.g.
+/// 1639668 -> "1,639,668". Pass [decimals] to keep a fixed number of decimals
+/// (2190447.51 -> "2,190,447.51").
+String formatThousands(double value, {int decimals = 0}) {
+  final negative = value < 0;
+  final fixed = value.abs().toStringAsFixed(decimals);
+  final parts = fixed.split('.');
+  final digits = parts[0];
+
+  final buffer = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
+    buffer.write(digits[i]);
+  }
+
+  final grouped = parts.length > 1 ? '$buffer.${parts[1]}' : buffer.toString();
+  return negative ? '-$grouped' : grouped;
+}
+
+/// Compact k/m/b string using the exact rounding the spreadsheet applies to its
+/// "Shown" values (Profile Comparison!E2): for each magnitude tier the scaled
+/// number shows 0 decimals when >= 100, 1 decimal when >= 10, otherwise 2;
+/// values under 1000 are shown as a whole number with no suffix.
+String formatSheetCompact(double value) {
+  String tier(double scaled, String suffix) {
+    if (scaled >= 100) return '${scaled.toStringAsFixed(0)}$suffix';
+    if (scaled >= 10) return '${scaled.toStringAsFixed(1)}$suffix';
+    return '${scaled.toStringAsFixed(2)}$suffix';
+  }
+
+  if (value >= 1e9) return tier(value / 1e9, 'B');
+  if (value >= 1e6) return tier(value / 1e6, 'M');
+  if (value >= 1e3) return tier(value / 1e3, 'K');
+  return value.toStringAsFixed(0);
+}
+
+/// One substat rendered as text, e.g. "Lifesteal 18.2%" or "Attack speed 34".
+String formatSubstat(Substat substat) {
+  final value = substat.type.isPercent
+      ? formatPercentPoints(substat.value)
+      : _trimDecimals(substat.value);
+  return '${substat.type.label} $value';
+}
+
+/// A comma-joined description of a list of substats, used to identify pets and
+/// mounts (which have no names in game). Falls back to the main stats when a
+/// piece has no substats.
+String describePiece({
+  required List<Substat> substats,
+  required double damage,
+  required double health,
+}) {
+  if (substats.isNotEmpty) {
+    return substats.map(formatSubstat).join(', ');
+  }
+  return 'DMG ${formatCompact(damage)} / HP ${formatCompact(health)}';
+}
+
+/// A pet's description including its type: "Attack - Lifesteal 18.2%, ...".
+String describePet(Pet pet) {
+  return '${pet.type.label} - '
+      '${describePiece(substats: pet.substats, damage: pet.mainDamage, health: pet.mainHealth)}';
+}
+
+String _trimDecimals(double value) {
+  var text = value.toStringAsFixed(2);
+  if (text.contains('.')) {
+    text = text.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+  }
+  return text;
+}

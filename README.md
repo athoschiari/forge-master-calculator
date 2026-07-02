@@ -1,0 +1,91 @@
+# Forge Master Optimizer
+
+A Flutter app that replaces the "Forge master master calculator" spreadsheet.
+It tracks your current gear, your pet and mount inventory, computes your build,
+and finds the best pet + mount loadout for three objectives:
+
+1. **Lifesteal / sec** — health recovered per second from lifesteal
+2. **DPS** — damage per second
+3. **Balanced** — a 50/50 blend of the two, normalised so neither dominates
+
+Material 3, dark by default. Local JSON persistence (no server, no login).
+Works on Flutter Web, desktop and Android from a single codebase.
+
+## Setup
+
+You need the Flutter SDK (stable channel, **3.27 or newer**). Then, from this
+folder:
+
+```bash
+# 1. Generate the platform scaffolding (android/web/windows/... folders).
+#    This does NOT overwrite lib/ or pubspec.yaml.
+flutter create .
+
+# 2. Fetch dependencies.
+flutter pub get
+
+# 3. Check it analyses clean.
+flutter analyze
+
+# 4. Run it.
+flutter run -d chrome      # web
+# or: flutter run -d windows / macos / linux / <device>
+```
+
+## How the numbers work
+
+Every formula is transcribed directly from the spreadsheet and lives in one
+place: `lib/engine/formulas.dart`. They were verified to reproduce the
+spreadsheet's Profile 1 outputs exactly:
+
+| Metric        | This app / sheet |
+| ------------- | ---------------- |
+| Total Damage  | 1,631,547.94     |
+| Total Health  | 5,836,745.2      |
+| Attack interval | 1.1s           |
+| DPS           | 2,179,599.725    |
+| Lifesteal/sec | 1,316,260        |
+
+Key points from the sheet:
+
+- **Main stats** (Damage, Health) are flat and summed across every piece; enter
+  them with k/m/b shorthand (e.g. `1.05m`).
+- **Substats** are percentages summed by name (Attack speed is a raw value).
+- **Attack speed** maps through a step function to an attack interval.
+- **Lifesteal** heals off damage dealt, weighted by double-hit and crit rate.
+- **Forge level** is metadata for upgrade cost, not a stat multiplier — you enter
+  already-forged values, exactly like the sheet.
+
+To recalibrate after a game patch, edit `lib/engine/formulas.dart` only.
+
+## Project layout
+
+```
+lib/
+  models/     enums, Stats aggregate, gear/pet/mount, build config + result
+  engine/     formulas, calculator (single entry point), optimizer, parser
+  repository/ local JSON storage
+  state/      AppState (single source of truth, ChangeNotifier)
+  widgets/    reusable cards, number field, substat editor
+  screens/    dashboard, gear, pets, mounts, optimizer, planner, settings, compare
+  theme/      Material 3 theme
+  main.dart   app entry + responsive navigation shell
+```
+
+## Importing from the spreadsheet
+
+Go to **Settings -> Import from spreadsheet -> Choose .xlsx file**, pick your
+`Forge master master calculator` workbook, then choose Profile 1, 2 or 3.
+
+The importer reads that profile's eight gear pieces, three pets, mount and the
+profile-level Skills block (base Damage/Health, Damage%/Health%, weapon type),
+applies the k/m/b multipliers exactly like the sheet, and rebuilds everything
+through the same engine. It was verified to reproduce the sheet's Profile 1
+numbers to the decimal. Importing overwrites your current gear and config and
+adds the profile's pets and mount to your inventory (equipping them).
+
+## Gear slots
+
+The app uses all eight gear slots from the spreadsheet: Helmet, Armor, Gloves,
+Necklace, Ring, Weapon, Boots, Belt. Plus a mount and three pet slots. The
+engine sums across every contributor, so the calculation matches the sheet.
