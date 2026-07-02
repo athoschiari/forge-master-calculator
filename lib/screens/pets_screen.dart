@@ -333,65 +333,99 @@ class _PetBatchInsertDialog extends StatefulWidget {
 
 class _PetBatchInsertDialogState extends State<_PetBatchInsertDialog> {
   final List<_PetBatchRow> _rows = [_PetBatchRow()];
+  final _vController = ScrollController();
+  final _hController = ScrollController();
 
   void _addRow() => setState(() => _rows.add(_PetBatchRow()));
 
   void _removeRow(int index) => setState(() => _rows.removeAt(index));
 
   @override
+  void dispose() {
+    _vController.dispose();
+    _hController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Batch insert pets'),
-      content: SizedBox(
-        width: 900,
-        child: SingleChildScrollView(
+    final size = MediaQuery.of(context).size;
+    final dialogWidth = (size.width - 48).clamp(0, 1200).toDouble();
+    return Dialog(
+      child: SizedBox(
+        width: dialogWidth,
+        height: size.height - 96,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columnSpacing: 12,
-                  columns: const [
-                    DataColumn(label: Text('Rarity')),
-                    DataColumn(label: Text('Level')),
-                    DataColumn(label: Text('Type')),
-                    DataColumn(label: Text('Main Damage')),
-                    DataColumn(label: Text('Main Health')),
-                    DataColumn(label: Text('Substat 1')),
-                    DataColumn(label: Text('Value')),
-                    DataColumn(label: Text('Substat 2')),
-                    DataColumn(label: Text('Value')),
-                    DataColumn(label: Text('')),
-                  ],
-                  rows: [
-                    for (var i = 0; i < _rows.length; i++) _buildRow(i),
-                  ],
+              Text('Batch insert pets', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 16),
+              Expanded(
+                child: Scrollbar(
+                  controller: _vController,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _vController,
+                    child: Scrollbar(
+                      controller: _hController,
+                      thumbVisibility: true,
+                      notificationPredicate: (n) => n.depth == 0,
+                      child: SingleChildScrollView(
+                        controller: _hController,
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columnSpacing: 12,
+                          columns: const [
+                            DataColumn(label: Text('Rarity')),
+                            DataColumn(label: Text('Level')),
+                            DataColumn(label: Text('Type')),
+                            DataColumn(label: Text('Main Damage')),
+                            DataColumn(label: Text('Main Health')),
+                            DataColumn(label: Text('Substat 1')),
+                            DataColumn(label: Text('Value')),
+                            DataColumn(label: Text('Substat 2')),
+                            DataColumn(label: Text('Value')),
+                            DataColumn(label: Text('')),
+                          ],
+                          rows: [
+                            for (var i = 0; i < _rows.length; i++) _buildRow(i),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
+              const SizedBox(height: 8),
               TextButton.icon(
                 onPressed: _addRow,
                 icon: const Icon(Icons.add),
                 label: const Text('Add row'),
               ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(
+                      context,
+                      [for (final r in _rows) r.toPet()],
+                    ),
+                    child: Text('Insert ${_rows.length}'),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(
-            context,
-            [for (final r in _rows) r.toPet()],
-          ),
-          child: Text('Insert ${_rows.length}'),
-        ),
-      ],
     );
   }
 
