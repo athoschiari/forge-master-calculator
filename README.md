@@ -92,3 +92,7 @@ adds the profile's pets and mount to your inventory (equipping them).
 The app uses all eight gear slots from the spreadsheet: Helmet, Armor, Gloves,
 Necklace, Ring, Weapon, Boots, Belt. Plus a mount and three pet slots. The
 engine sums across every contributor, so the calculation matches the sheet.
+
+## Original credits
+
+<img width="683" height="740" alt="image" src="https://github.com/user-attachments/assets/5e85730b-cba8-4a26-82f1-11a7780c6c11" />
