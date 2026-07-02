@@ -1,4 +1,5 @@
 # Miscellaneous
+.claude/settings.local.json
 *.class
 *.log
 *.pyc
