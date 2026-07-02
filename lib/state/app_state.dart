@@ -284,6 +284,60 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Full snapshot of everything persisted, for transferring a profile to
+  /// another device by exporting this to a .json file and importing it there.
+  Map<String, dynamic> exportAll() => {
+        'version': 1,
+        'gear': [for (final p in _gear.values) if (p != null) p.toJson()],
+        'pets': [for (final p in _pets) p.toJson()],
+        'mounts': [for (final m in _mounts) m.toJson()],
+        'config': _config.toJson(),
+        'equipped': {'pets': _equippedPetIds, 'mount': _equippedMountId},
+        'petSlots': _petSlots,
+      };
+
+  /// Replaces every piece of persisted state with a snapshot from
+  /// [exportAll], as produced on another device.
+  void importAll(Map<String, dynamic> json) {
+    final gear = <GearSlot, GearPiece?>{
+      for (final slot in GearSlot.values) slot: GearPiece.empty(slot),
+    };
+    for (final raw in (json['gear'] as List?) ?? const []) {
+      final piece = GearPiece.fromJson(raw as Map<String, dynamic>);
+      gear[piece.slot] = piece;
+    }
+    _gear
+      ..clear()
+      ..addAll(gear);
+
+    _pets = ((json['pets'] as List?) ?? const [])
+        .map((e) => Pet.fromJson(e as Map<String, dynamic>))
+        .toList();
+    _mounts = ((json['mounts'] as List?) ?? const [])
+        .map((e) => Mount.fromJson(e as Map<String, dynamic>))
+        .toList();
+
+    final configJson = json['config'] as Map<String, dynamic>?;
+    _config =
+        configJson != null ? BuildConfig.fromJson(configJson) : const BuildConfig();
+
+    final equipped = json['equipped'] as Map<String, dynamic>?;
+    _equippedPetIds = ((equipped?['pets'] as List?) ?? const [])
+        .map((e) => e as String)
+        .toList();
+    _equippedMountId = equipped?['mount'] as String?;
+
+    _petSlots = (json['petSlots'] as num?)?.toInt() ?? _petSlots;
+
+    _persistGear();
+    _persistPets();
+    _persistMounts();
+    _persistEquipped();
+    _storage.writeObject(_kConfig, _config.toJson());
+    _storage.writeInt(_kPetSlots, _petSlots);
+    notifyListeners();
+  }
+
   static int _idCounter = 0;
 
   static String _newId() {

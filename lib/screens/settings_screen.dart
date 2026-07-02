@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -54,6 +57,50 @@ class SettingsScreen extends StatelessWidget {
                     icon: const Icon(Icons.upload_file),
                     label: const Text('Choose .xlsx file'),
                   ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.sync_alt, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text('Backup / transfer', style: theme.textTheme.titleMedium),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Export everything (gear, pets, mounts, config) to a .json '
+                  'file, then import it on another device to carry your data '
+                  'over.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: () => _exportFlow(context, state),
+                      icon: const Icon(Icons.download),
+                      label: const Text('Export to .json'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _importAllFlow(context, state),
+                      icon: const Icon(Icons.upload_file),
+                      label: const Text('Import .json'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -240,6 +287,65 @@ class SettingsScreen extends StatelessWidget {
       if (context.mounted) _snack(context, 'Imported Profile $profile.');
     } on SpreadsheetImportException catch (e) {
       if (context.mounted) _snack(context, e.message);
+    } catch (e) {
+      if (context.mounted) _snack(context, 'Import failed: $e');
+    }
+  }
+
+  Future<void> _exportFlow(BuildContext context, AppState state) async {
+    final json = const JsonEncoder.withIndent('  ').convert(state.exportAll());
+    final bytes = Uint8List.fromList(utf8.encode(json));
+    final path = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save backup',
+      fileName: 'forge-master-backup.json',
+      bytes: bytes,
+    );
+    if (!context.mounted) return;
+    _snack(context, path == null ? 'Export cancelled.' : 'Exported backup.');
+  }
+
+  Future<void> _importAllFlow(BuildContext context, AppState state) async {
+    final picked = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      withData: true,
+    );
+    if (picked == null) return; // cancelled
+
+    final bytes = picked.files.single.bytes;
+    if (bytes == null) {
+      if (context.mounted) _snack(context, 'Could not read that file.');
+      return;
+    }
+    if (!context.mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Replace everything?'),
+        content: const Text(
+          'Importing a backup replaces all your current gear, pets, mounts, '
+          'config and equipped loadout with what is in that file. This '
+          'cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Replace'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+      state.importAll(json);
+      if (context.mounted) _snack(context, 'Backup restored.');
     } catch (e) {
       if (context.mounted) _snack(context, 'Import failed: $e');
     }

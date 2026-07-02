@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/enums.dart';
+import '../models/stats.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatting.dart';
@@ -144,13 +145,23 @@ class Dashboard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        _SectionCard(
-          title: 'Aggregated stats',
-          rows: [
-            for (final type in _statOrder)
-              _Row(type.label,
-                  formatStatValue(type, build.aggregate.sub(type))),
-          ],
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Aggregated stats', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 4),
+                for (final type in _statOrder)
+                  _StatRow(
+                    type: type,
+                    value: build.aggregate.sub(type),
+                    breakdown: _breakdown(state, type),
+                  ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 16),
         Card(
@@ -212,6 +223,141 @@ class Dashboard extends StatelessWidget {
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  /// Every equipped source (gear slots, pets, mount) that rolls [type],
+  /// with just its contribution to that one stat - not its whole kit.
+  List<_Contribution> _breakdown(AppState state, SubstatType type) {
+    final list = <_Contribution>[];
+
+    double contributionOf(List<Substat> substats) => substats
+        .where((s) => s.type == type)
+        .fold(0.0, (sum, s) => sum + s.value);
+
+    for (final slot in GearSlot.values) {
+      final piece = state.gearFor(slot);
+      final v = contributionOf(piece.substats);
+      if (v != 0) list.add(_Contribution(label: slot.label, value: v));
+    }
+
+    for (final pet in state.equippedPets) {
+      final v = contributionOf(pet.substats);
+      if (v != 0) {
+        list.add(_Contribution(label: '${pet.type.label} pet', value: v));
+      }
+    }
+
+    final mount = state.equippedMount;
+    if (mount != null) {
+      final v = contributionOf(mount.substats);
+      if (v != 0) list.add(_Contribution(label: 'Mount', value: v));
+    }
+
+    return list;
+  }
+}
+
+/// One source's contribution to a single substat total, e.g. Helmet -> +10%.
+class _Contribution {
+  const _Contribution({required this.label, required this.value});
+  final String label;
+  final double value;
+}
+
+/// A stat total that expands (tap to toggle) into which equipped pieces
+/// contribute to it and by how much.
+class _StatRow extends StatefulWidget {
+  const _StatRow({
+    required this.type,
+    required this.value,
+    required this.breakdown,
+  });
+
+  final SubstatType type;
+  final double value;
+  final List<_Contribution> breakdown;
+
+  @override
+  State<_StatRow> createState() => _StatRowState();
+}
+
+class _StatRowState extends State<_StatRow> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasBreakdown = widget.breakdown.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: hasBreakdown
+              ? () => setState(() => _expanded = !_expanded)
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  child: hasBreakdown
+                      ? Icon(
+                          _expanded ? Icons.expand_more : Icons.chevron_right,
+                          size: 18,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        )
+                      : null,
+                ),
+                Expanded(
+                  child: Text(
+                    widget.type.label,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Text(
+                  formatStatValue(widget.type, widget.value),
+                  style: theme.textTheme.bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_expanded)
+          Padding(
+            padding: const EdgeInsets.only(left: 20, bottom: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final c in widget.breakdown)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(c.label,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              )),
+                        ),
+                        Text(
+                          formatStatValue(widget.type, c.value),
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
       ],
     );
   }

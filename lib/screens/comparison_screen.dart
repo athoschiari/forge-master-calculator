@@ -456,6 +456,12 @@ class _Worthiness extends StatelessWidget {
                 current: _metric(currentOut.best[mode], mode),
                 candidate: _metric(candidateOut.best[mode], mode),
                 loadout: _loadout(candidateOut.best[mode]),
+                currentSplit: mode == OptimizationMode.balanced
+                    ? currentOut.best[mode]
+                    : null,
+                candidateSplit: mode == OptimizationMode.balanced
+                    ? candidateOut.best[mode]
+                    : null,
               ),
             const SizedBox(height: 8),
             Card(
@@ -493,12 +499,19 @@ class _WorthinessRow extends StatelessWidget {
     required this.current,
     required this.candidate,
     required this.loadout,
+    this.currentSplit,
+    this.candidateSplit,
   });
 
   final OptimizationMode mode;
   final double current;
   final double candidate;
   final String loadout;
+
+  /// The balanced objective's underlying DPS + lifesteal/sec, shown alongside
+  /// the combined balanced number so it isn't a single opaque figure.
+  final BuildCandidate? currentSplit;
+  final BuildCandidate? candidateSplit;
 
   @override
   Widget build(BuildContext context) {
@@ -540,6 +553,19 @@ class _WorthinessRow extends StatelessWidget {
               ),
             ],
           ),
+          if (currentSplit != null && candidateSplit != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                'DPS ${formatCompact(currentSplit!.dps)} -> '
+                '${formatCompact(candidateSplit!.dps)}   |   '
+                'Lifesteal/sec ${formatCompact(currentSplit!.lifestealPerSecond)} -> '
+                '${formatCompact(candidateSplit!.lifestealPerSecond)}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           if (loadout.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 2),
