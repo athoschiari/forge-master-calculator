@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/enums.dart';
 import '../models/stats.dart';
 import 'number_field.dart';
+import 'searchable_dropdown.dart';
 
 /// Editable list of up to [maxCount] substats: each row is a type dropdown plus
 /// a value field. Reports the current list through [onChanged]. Shared by the
@@ -49,19 +50,14 @@ class SubstatEditor extends StatelessWidget {
               children: [
                 Expanded(
                   flex: 3,
-                  child: DropdownButtonFormField<SubstatType>(
-                    initialValue: substats[i].type,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Substat'),
-                    items: [
+                  child: SearchableDropdown<SubstatType>(
+                    value: substats[i].type,
+                    label: const Text('Substat'),
+                    entries: [
                       for (final t in SubstatType.values)
-                        DropdownMenuItem(value: t, child: Text(t.label)),
+                        DropdownMenuEntry(value: t, label: t.label),
                     ],
-                    onChanged: (t) {
-                      if (t != null) {
-                        _update(i, substats[i].copyWith(type: t));
-                      }
-                    },
+                    onChanged: (t) => _update(i, substats[i].copyWith(type: t)),
                   ),
                 ),
                 const SizedBox(width: 10),

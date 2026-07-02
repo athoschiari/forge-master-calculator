@@ -48,6 +48,14 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     );
   }
 
+  void _replaceCurrent(BuildContext context, AppState state) {
+    state.setGear(widget.slot, _candidate);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${widget.slot.label} updated.')),
+    );
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -57,7 +65,19 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Compare ${widget.slot.label}')),
+      appBar: AppBar(
+        title: Text('Compare ${widget.slot.label}'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: FilledButton.icon(
+              onPressed: () => _replaceCurrent(context, state),
+              icon: const Icon(Icons.swap_horiz, size: 18),
+              label: const Text('Replace current'),
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -95,7 +115,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
           const SizedBox(height: 12),
           Text(
             'The comparison above is over your currently equipped pets and '
-            'mount. Save the candidate from the Gear screen if you swap.',
+            'mount. Use "Replace current" above to swap in the candidate.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

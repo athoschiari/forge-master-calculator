@@ -7,9 +7,15 @@ import '../models/stats.dart';
 import '../state/app_state.dart';
 import '../widgets/mount_card.dart';
 import '../widgets/number_field.dart';
+import '../widgets/searchable_dropdown.dart';
 import '../widgets/substat_editor.dart';
 
-enum _MountSort { damage, health }
+enum _MountSort {
+  damage,
+  health;
+
+  String get label => this == _MountSort.damage ? 'Damage' : 'Health';
+}
 
 /// Mount inventory: search, sort, add, edit, duplicate, delete and equip. Only
 /// one mount is equipped at a time.
@@ -70,13 +76,14 @@ class _MountsScreenState extends State<MountsScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              DropdownButton<_MountSort>(
+              SearchableDropdown<_MountSort>(
                 value: _sort,
-                onChanged: (v) => setState(() => _sort = v ?? _MountSort.damage),
-                items: const [
-                  DropdownMenuItem(value: _MountSort.damage, child: Text('Damage')),
-                  DropdownMenuItem(value: _MountSort.health, child: Text('Health')),
+                width: 160,
+                entries: [
+                  for (final s in _MountSort.values)
+                    DropdownMenuEntry(value: s, label: s.label),
                 ],
+                onChanged: (v) => setState(() => _sort = v),
               ),
               const SizedBox(width: 12),
               OutlinedButton.icon(
@@ -183,15 +190,15 @@ class _MountEditorDialogState extends State<_MountEditorDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<Rarity>(
-                      initialValue: _draft.rarity,
-                      decoration: const InputDecoration(labelText: 'Rarity'),
-                      items: [
+                    child: SearchableDropdown<Rarity>(
+                      value: _draft.rarity,
+                      label: const Text('Rarity'),
+                      entries: [
                         for (final r in Rarity.values)
-                          DropdownMenuItem(value: r, child: Text(r.label)),
+                          DropdownMenuEntry(value: r, label: r.label),
                       ],
-                      onChanged: (r) => setState(
-                          () => _draft = _draft.copyWith(rarity: r ?? _draft.rarity)),
+                      onChanged: (r) =>
+                          setState(() => _draft = _draft.copyWith(rarity: r)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -394,18 +401,15 @@ class _MountBatchInsertDialogState extends State<_MountBatchInsertDialog> {
 
   DataRow _buildRow(int i) {
     final row = _rows[i];
-    return DataRow(cells: [
-      DataCell(SizedBox(
-        width: 120,
-        child: DropdownButtonFormField<Rarity>(
-          initialValue: row.rarity,
-          isExpanded: true,
-          items: [
-            for (final r in Rarity.values)
-              DropdownMenuItem(value: r, child: Text(r.label)),
-          ],
-          onChanged: (r) => setState(() => row.rarity = r ?? row.rarity),
-        ),
+    return DataRow(key: ValueKey(row), cells: [
+      DataCell(SearchableDropdown<Rarity>(
+        value: row.rarity,
+        width: 130,
+        entries: [
+          for (final r in Rarity.values)
+            DropdownMenuEntry(value: r, label: r.label),
+        ],
+        onChanged: (r) => setState(() => row.rarity = r),
       )),
       DataCell(SizedBox(
         width: 70,
@@ -432,18 +436,15 @@ class _MountBatchInsertDialogState extends State<_MountBatchInsertDialog> {
           onChanged: (v) => row.mainHealth = v,
         ),
       )),
-      DataCell(SizedBox(
-        width: 130,
-        child: DropdownButtonFormField<SubstatType?>(
-          initialValue: row.sub1Type,
-          isExpanded: true,
-          items: [
-            const DropdownMenuItem(value: null, child: Text('None')),
-            for (final t in SubstatType.values)
-              DropdownMenuItem(value: t, child: Text(t.label)),
-          ],
-          onChanged: (t) => setState(() => row.sub1Type = t),
-        ),
+      DataCell(SearchableDropdown<SubstatType?>(
+        value: row.sub1Type,
+        width: 140,
+        entries: [
+          const DropdownMenuEntry(value: null, label: 'None'),
+          for (final t in SubstatType.values)
+            DropdownMenuEntry(value: t, label: t.label),
+        ],
+        onChanged: (t) => setState(() => row.sub1Type = t),
       )),
       DataCell(SizedBox(
         width: 80,
@@ -455,18 +456,15 @@ class _MountBatchInsertDialogState extends State<_MountBatchInsertDialog> {
           onChanged: (v) => row.sub1Value = v,
         ),
       )),
-      DataCell(SizedBox(
-        width: 130,
-        child: DropdownButtonFormField<SubstatType?>(
-          initialValue: row.sub2Type,
-          isExpanded: true,
-          items: [
-            const DropdownMenuItem(value: null, child: Text('None')),
-            for (final t in SubstatType.values)
-              DropdownMenuItem(value: t, child: Text(t.label)),
-          ],
-          onChanged: (t) => setState(() => row.sub2Type = t),
-        ),
+      DataCell(SearchableDropdown<SubstatType?>(
+        value: row.sub2Type,
+        width: 140,
+        entries: [
+          const DropdownMenuEntry(value: null, label: 'None'),
+          for (final t in SubstatType.values)
+            DropdownMenuEntry(value: t, label: t.label),
+        ],
+        onChanged: (t) => setState(() => row.sub2Type = t),
       )),
       DataCell(SizedBox(
         width: 80,

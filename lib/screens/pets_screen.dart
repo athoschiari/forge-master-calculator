@@ -7,9 +7,15 @@ import '../models/stats.dart';
 import '../state/app_state.dart';
 import '../widgets/number_field.dart';
 import '../widgets/pet_card.dart';
+import '../widgets/searchable_dropdown.dart';
 import '../widgets/substat_editor.dart';
 
-enum _PetSort { damage, health }
+enum _PetSort {
+  damage,
+  health;
+
+  String get label => this == _PetSort.damage ? 'Damage' : 'Health';
+}
 
 /// Pet inventory: search, sort, add, edit, duplicate, delete and equip.
 class PetsScreen extends StatefulWidget {
@@ -77,13 +83,14 @@ class _PetsScreenState extends State<PetsScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              DropdownButton<_PetSort>(
+              SearchableDropdown<_PetSort>(
                 value: _sort,
-                onChanged: (v) => setState(() => _sort = v ?? _PetSort.damage),
-                items: const [
-                  DropdownMenuItem(value: _PetSort.damage, child: Text('Damage')),
-                  DropdownMenuItem(value: _PetSort.health, child: Text('Health')),
+                width: 160,
+                entries: [
+                  for (final s in _PetSort.values)
+                    DropdownMenuEntry(value: s, label: s.label),
                 ],
+                onChanged: (v) => setState(() => _sort = v),
               ),
               const SizedBox(width: 12),
               OutlinedButton.icon(
@@ -190,15 +197,15 @@ class _PetEditorDialogState extends State<_PetEditorDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<Rarity>(
-                      initialValue: _draft.rarity,
-                      decoration: const InputDecoration(labelText: 'Rarity'),
-                      items: [
+                    child: SearchableDropdown<Rarity>(
+                      value: _draft.rarity,
+                      label: const Text('Rarity'),
+                      entries: [
                         for (final r in Rarity.values)
-                          DropdownMenuItem(value: r, child: Text(r.label)),
+                          DropdownMenuEntry(value: r, label: r.label),
                       ],
-                      onChanged: (r) => setState(
-                          () => _draft = _draft.copyWith(rarity: r ?? _draft.rarity)),
+                      onChanged: (r) =>
+                          setState(() => _draft = _draft.copyWith(rarity: r)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -431,21 +438,18 @@ class _PetBatchInsertDialogState extends State<_PetBatchInsertDialog> {
 
   DataRow _buildRow(int i) {
     final row = _rows[i];
-    return DataRow(cells: [
-      DataCell(SizedBox(
-        width: 120,
-        child: DropdownButtonFormField<Rarity>(
-          initialValue: row.rarity,
-          isExpanded: true,
-          items: [
-            for (final r in Rarity.values)
-              DropdownMenuItem(value: r, child: Text(r.label)),
-          ],
-          onChanged: (r) => setState(() {
-            row.rarity = r ?? row.rarity;
-            row.applyPreset();
-          }),
-        ),
+    return DataRow(key: ValueKey(row), cells: [
+      DataCell(SearchableDropdown<Rarity>(
+        value: row.rarity,
+        width: 130,
+        entries: [
+          for (final r in Rarity.values)
+            DropdownMenuEntry(value: r, label: r.label),
+        ],
+        onChanged: (r) => setState(() {
+          row.rarity = r;
+          row.applyPreset();
+        }),
       )),
       DataCell(SizedBox(
         width: 70,
@@ -456,20 +460,17 @@ class _PetBatchInsertDialogState extends State<_PetBatchInsertDialog> {
           onChanged: (v) => row.level = v.round().clamp(1, 999).toInt(),
         ),
       )),
-      DataCell(SizedBox(
-        width: 120,
-        child: DropdownButtonFormField<PetType>(
-          initialValue: row.type,
-          isExpanded: true,
-          items: [
-            for (final t in PetType.values)
-              DropdownMenuItem(value: t, child: Text(t.label)),
-          ],
-          onChanged: (t) => setState(() {
-            row.type = t ?? row.type;
-            row.applyPreset();
-          }),
-        ),
+      DataCell(SearchableDropdown<PetType>(
+        value: row.type,
+        width: 130,
+        entries: [
+          for (final t in PetType.values)
+            DropdownMenuEntry(value: t, label: t.label),
+        ],
+        onChanged: (t) => setState(() {
+          row.type = t;
+          row.applyPreset();
+        }),
       )),
       DataCell(SizedBox(
         width: 100,
@@ -487,18 +488,15 @@ class _PetBatchInsertDialogState extends State<_PetBatchInsertDialog> {
           onChanged: (v) => row.mainHealth = v,
         ),
       )),
-      DataCell(SizedBox(
-        width: 130,
-        child: DropdownButtonFormField<SubstatType?>(
-          initialValue: row.sub1Type,
-          isExpanded: true,
-          items: [
-            const DropdownMenuItem(value: null, child: Text('None')),
-            for (final t in SubstatType.values)
-              DropdownMenuItem(value: t, child: Text(t.label)),
-          ],
-          onChanged: (t) => setState(() => row.sub1Type = t),
-        ),
+      DataCell(SearchableDropdown<SubstatType?>(
+        value: row.sub1Type,
+        width: 140,
+        entries: [
+          const DropdownMenuEntry(value: null, label: 'None'),
+          for (final t in SubstatType.values)
+            DropdownMenuEntry(value: t, label: t.label),
+        ],
+        onChanged: (t) => setState(() => row.sub1Type = t),
       )),
       DataCell(SizedBox(
         width: 80,
@@ -510,18 +508,15 @@ class _PetBatchInsertDialogState extends State<_PetBatchInsertDialog> {
           onChanged: (v) => row.sub1Value = v,
         ),
       )),
-      DataCell(SizedBox(
-        width: 130,
-        child: DropdownButtonFormField<SubstatType?>(
-          initialValue: row.sub2Type,
-          isExpanded: true,
-          items: [
-            const DropdownMenuItem(value: null, child: Text('None')),
-            for (final t in SubstatType.values)
-              DropdownMenuItem(value: t, child: Text(t.label)),
-          ],
-          onChanged: (t) => setState(() => row.sub2Type = t),
-        ),
+      DataCell(SearchableDropdown<SubstatType?>(
+        value: row.sub2Type,
+        width: 140,
+        entries: [
+          const DropdownMenuEntry(value: null, label: 'None'),
+          for (final t in SubstatType.values)
+            DropdownMenuEntry(value: t, label: t.label),
+        ],
+        onChanged: (t) => setState(() => row.sub2Type = t),
       )),
       DataCell(SizedBox(
         width: 80,
