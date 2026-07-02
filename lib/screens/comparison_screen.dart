@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,6 +13,11 @@ import '../theme/app_theme.dart';
 import '../utils/formatting.dart';
 import '../widgets/number_field.dart';
 import '../widgets/substat_editor.dart';
+
+/// How long to wait after the last keystroke before re-running the optimizer
+/// over every pet/mount combination. That search is combinatorial and far too
+/// slow to redo on every character typed into the candidate's stat fields.
+const _optimizerDebounce = Duration(milliseconds: 400);
 
 /// Compares the current piece in a slot against a candidate the player is
 /// considering, over the current pets and mount. Shows DPS, HP, lifesteal/sec
@@ -26,15 +33,51 @@ class ComparisonScreen extends StatefulWidget {
 
 class _ComparisonScreenState extends State<ComparisonScreen> {
   late GearPiece _candidate;
+  Timer? _debounce;
+
+  // Cached optimizer results: this combinatorial search is expensive, so it
+  // must not run on every keystroke. `_currentOut` never changes for the life
+  // of this screen (it doesn't depend on the candidate); `_candidateOut` is
+  // refreshed only after typing pauses, via `_scheduleOptimizerRefresh`.
+  late OptimizerOutput _currentOut;
+  late OptimizerOutput _candidateOut;
 
   @override
   void initState() {
     super.initState();
     // Seed the candidate from the current piece so only the changed fields
     // need editing.
-    final current =
-        context.read<AppState>().gearFor(widget.slot);
+    final state = context.read<AppState>();
+    final current = state.gearFor(widget.slot);
     _candidate = current.copyWith();
+    _currentOut = _runOptimizer(state, current);
+    _candidateOut = _runOptimizer(state, _candidate);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  OptimizerOutput _runOptimizer(AppState state, GearPiece piece) {
+    final gear = {...state.gear}..[widget.slot] = piece;
+    return Optimizer.run(
+      gear: gear,
+      pets: state.pets,
+      mounts: state.mounts,
+      config: state.config,
+      petSlots: state.petSlots,
+    );
+  }
+
+  void _scheduleOptimizerRefresh() {
+    _debounce?.cancel();
+    _debounce = Timer(_optimizerDebounce, () {
+      if (!mounted) return;
+      final state = context.read<AppState>();
+      setState(() => _candidateOut = _runOptimizer(state, _candidate));
+    });
   }
 
   BuildResult _buildWith(AppState state, GearPiece piece) {
@@ -83,7 +126,10 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         children: [
           _CandidateEditor(
             candidate: _candidate,
-            onChanged: (p) => setState(() => _candidate = p),
+            onChanged: (p) {
+              setState(() => _candidate = p);
+              _scheduleOptimizerRefresh();
+            },
           ),
           const SizedBox(height: 20),
           _DeltaRow(
@@ -121,7 +167,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _Worthiness(slot: widget.slot, candidate: _candidate),
+          _Worthiness(currentOut: _currentOut, candidateOut: _candidateOut),
         ],
       ),
     );
@@ -312,10 +358,10 @@ class _Verdict extends StatelessWidget {
 /// the optimizer twice — once with the current piece, once with the candidate —
 /// and compares the best result for each objective.
 class _Worthiness extends StatelessWidget {
-  const _Worthiness({required this.slot, required this.candidate});
+  const _Worthiness({required this.currentOut, required this.candidateOut});
 
-  final GearSlot slot;
-  final GearPiece candidate;
+  final OptimizerOutput currentOut;
+  final OptimizerOutput candidateOut;
 
   double _metric(BuildCandidate? c, OptimizationMode mode) {
     if (c == null) return 0;
@@ -333,24 +379,7 @@ class _Worthiness extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
     final theme = Theme.of(context);
-
-    final currentOut = Optimizer.run(
-      gear: state.gear,
-      pets: state.pets,
-      mounts: state.mounts,
-      config: state.config,
-      petSlots: state.petSlots,
-    );
-    final candidateGear = {...state.gear}..[slot] = candidate;
-    final candidateOut = Optimizer.run(
-      gear: candidateGear,
-      pets: state.pets,
-      mounts: state.mounts,
-      config: state.config,
-      petSlots: state.petSlots,
-    );
 
     if (currentOut.isEmpty || candidateOut.isEmpty) {
       return Card(
