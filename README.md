@@ -14,6 +14,10 @@ and finds the best pet + mount loadout for three objectives:
 Material 3, dark by default. Local JSON persistence (no server, no login).
 Works on Flutter Web, desktop and Android from a single codebase.
 
+**Live demo:** https://athoschiari.github.io/forge-master-calculator/
+(built and deployed automatically from `main` via GitHub Actions, see
+`.github/workflows/deploy.yml`).
+
 ## Setup
 
 You need the Flutter SDK (stable channel, **3.27 or newer**). Then, from this
