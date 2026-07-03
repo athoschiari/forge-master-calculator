@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Used to import gear/pet/mount stats from a screenshot you select.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Used to take a photo of an in-game item popup to import its stats.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

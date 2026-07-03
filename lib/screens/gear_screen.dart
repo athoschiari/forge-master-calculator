@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../engine/item_screenshot_parser.dart';
 import '../models/enums.dart';
 import '../models/gear.dart';
 import '../models/stats.dart';
+import '../services/screenshot_import_flow.dart';
 import '../state/app_state.dart';
+import '../utils/platform_support.dart';
 import '../widgets/gear_card.dart';
 import '../widgets/number_field.dart';
 import '../widgets/searchable_dropdown.dart';
@@ -51,6 +54,9 @@ class GearScreen extends StatelessWidget {
               GearCard(
                 piece: state.gearFor(slot),
                 onEdit: () => _editPiece(context, state, slot),
+                onImportScreenshot: isMobilePlatform
+                    ? () => _importFromScreenshot(context, state, slot)
+                    : null,
               ),
           ],
         ),
@@ -96,6 +102,34 @@ class GearScreen extends StatelessWidget {
     );
     if (result != null) state.setGear(slot, result);
   }
+
+  Future<void> _importFromScreenshot(
+    BuildContext context,
+    AppState state,
+    GearSlot slot,
+  ) async {
+    final parsed = await ScreenshotImportFlow.run(context);
+    if (parsed == null || !context.mounted) return;
+    final seeded = _mergeParsed(state.gearFor(slot), parsed);
+    final result = await showDialog<GearPiece>(
+      context: context,
+      builder: (_) => _GearEditorDialog(piece: seeded),
+    );
+    if (result != null) state.setGear(slot, result);
+  }
+
+  /// Merges OCR-parsed fields onto an existing gear piece: only fields OCR
+  /// actually recognised overwrite the existing values, matching this app's
+  /// "0/empty = unset" convention rather than clobbering fields OCR missed.
+  GearPiece _mergeParsed(GearPiece base, ParsedItemScreenshot p) =>
+      base.copyWith(
+        mainDamage: p.mainDamage ?? base.mainDamage,
+        mainHealth: p.mainHealth ?? base.mainHealth,
+        substats: p.substats.isNotEmpty ? p.substats : base.substats,
+        rarity: p.rarityRawLabel == null
+            ? null
+            : matchByLabel(GearRarity.values, (r) => r.label, p.rarityRawLabel!),
+      );
 }
 
 class _GearEditorDialog extends StatefulWidget {
