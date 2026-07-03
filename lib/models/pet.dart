@@ -63,7 +63,7 @@ class Pet {
   factory Pet.fromJson(Map<String, dynamic> json) => Pet(
         id: json['id'] as String,
         type: PetType.values.byName(json['type'] as String? ?? 'balanced'),
-        rarity: Rarity.values.byName(json['rarity'] as String? ?? 'common'),
+        rarity: Rarity.fromJson(json['rarity'] as String?),
         level: (json['level'] as num?)?.toInt() ?? 1,
         mainDamage: (json['mainDamage'] as num?)?.toDouble() ?? 0,
         mainHealth: (json['mainHealth'] as num?)?.toDouble() ?? 0,

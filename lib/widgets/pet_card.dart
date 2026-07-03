@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/pet.dart';
+import '../theme/app_theme.dart';
 import '../utils/formatting.dart';
 import 'substat_chips.dart';
 
@@ -28,6 +29,7 @@ class PetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
+      color: AppTheme.rarityTint(theme.colorScheme, pet.rarity.color),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(

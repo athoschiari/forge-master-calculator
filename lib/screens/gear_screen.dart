@@ -7,6 +7,7 @@ import '../models/stats.dart';
 import '../state/app_state.dart';
 import '../widgets/gear_card.dart';
 import '../widgets/number_field.dart';
+import '../widgets/searchable_dropdown.dart';
 import '../widgets/substat_editor.dart';
 import 'comparison_screen.dart';
 
@@ -147,12 +148,31 @@ class _GearEditorDialogState extends State<_GearEditorDialog> {
                 ],
               ),
               const SizedBox(height: 12),
-              NumberField(
-                label: 'Forge level',
-                value: _draft.forgeLevel.toDouble(),
-                allowShorthand: false,
-                onChanged: (v) => _draft =
-                    _draft.copyWith(forgeLevel: v.round().clamp(0, 100).toInt()),
+              Row(
+                children: [
+                  Expanded(
+                    child: SearchableDropdown<GearRarity>(
+                      value: _draft.rarity,
+                      label: const Text('Rarity'),
+                      entries: [
+                        for (final r in GearRarity.values)
+                          DropdownMenuEntry(value: r, label: r.label),
+                      ],
+                      onChanged: (r) =>
+                          setState(() => _draft = _draft.copyWith(rarity: r)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: NumberField(
+                      label: 'Forge level',
+                      value: _draft.forgeLevel.toDouble(),
+                      allowShorthand: false,
+                      onChanged: (v) => setState(() => _draft = _draft.copyWith(
+                          forgeLevel: v.round().clamp(0, 100).toInt())),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               Text(

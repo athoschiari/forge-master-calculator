@@ -149,26 +149,76 @@ enum OptimizationMode {
 /// it does not affect calculations.
 enum Rarity {
   common,
-  uncommon,
   rare,
   epic,
   legendary,
+  ultimate,
   mythic;
 
   String get label {
     switch (this) {
       case Rarity.common:
         return 'Common';
-      case Rarity.uncommon:
-        return 'Uncommon';
       case Rarity.rare:
         return 'Rare';
       case Rarity.epic:
         return 'Epic';
       case Rarity.legendary:
         return 'Legendary';
+      case Rarity.ultimate:
+        return 'Ultimate';
       case Rarity.mythic:
         return 'Mythic';
+    }
+  }
+
+  /// Defensive parse for persisted values: falls back to [common] for a
+  /// missing key or an unrecognised name (e.g. the pre-rename `uncommon`
+  /// this enum no longer has). Mirrors [SubstatType.fromLabel]'s pattern.
+  static Rarity fromJson(String? raw) {
+    for (final r in Rarity.values) {
+      if (r.name == raw) return r;
+    }
+    return Rarity.common;
+  }
+}
+
+/// Rarity tiers for gear, distinct from [Rarity] (pets/mounts use a
+/// different, shorter tier list under a different naming scheme).
+enum GearRarity {
+  primitive,
+  medieval,
+  earlyModern,
+  modern,
+  space,
+  interstellar,
+  multiverse,
+  quantum,
+  underworld,
+  divine;
+
+  String get label {
+    switch (this) {
+      case GearRarity.primitive:
+        return 'Primitive';
+      case GearRarity.medieval:
+        return 'Medieval';
+      case GearRarity.earlyModern:
+        return 'Early-Modern';
+      case GearRarity.modern:
+        return 'Modern';
+      case GearRarity.space:
+        return 'Space';
+      case GearRarity.interstellar:
+        return 'Interstellar';
+      case GearRarity.multiverse:
+        return 'Multiverse';
+      case GearRarity.quantum:
+        return 'Quantum';
+      case GearRarity.underworld:
+        return 'Underworld';
+      case GearRarity.divine:
+        return 'Divine';
     }
   }
 }

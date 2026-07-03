@@ -7,6 +7,7 @@ import 'stats.dart';
 /// upgrade cost; it does not scale stats (entered values are already forged).
 class GearPiece {
   final GearSlot slot;
+  final GearRarity rarity;
   final double mainDamage;
   final double mainHealth;
   final int forgeLevel;
@@ -14,6 +15,7 @@ class GearPiece {
 
   const GearPiece({
     required this.slot,
+    this.rarity = GearRarity.primitive,
     this.mainDamage = 0,
     this.mainHealth = 0,
     this.forgeLevel = 0,
@@ -30,6 +32,7 @@ class GearPiece {
 
   GearPiece copyWith({
     GearSlot? slot,
+    GearRarity? rarity,
     double? mainDamage,
     double? mainHealth,
     int? forgeLevel,
@@ -37,6 +40,7 @@ class GearPiece {
   }) {
     return GearPiece(
       slot: slot ?? this.slot,
+      rarity: rarity ?? this.rarity,
       mainDamage: mainDamage ?? this.mainDamage,
       mainHealth: mainHealth ?? this.mainHealth,
       forgeLevel: forgeLevel ?? this.forgeLevel,
@@ -46,6 +50,7 @@ class GearPiece {
 
   Map<String, dynamic> toJson() => {
         'slot': slot.name,
+        'rarity': rarity.name,
         'mainDamage': mainDamage,
         'mainHealth': mainHealth,
         'forgeLevel': forgeLevel,
@@ -54,6 +59,8 @@ class GearPiece {
 
   factory GearPiece.fromJson(Map<String, dynamic> json) => GearPiece(
         slot: GearSlot.values.byName(json['slot'] as String),
+        rarity: GearRarity.values
+            .byName(json['rarity'] as String? ?? 'primitive'),
         mainDamage: (json['mainDamage'] as num?)?.toDouble() ?? 0,
         mainHealth: (json['mainHealth'] as num?)?.toDouble() ?? 0,
         forgeLevel: (json['forgeLevel'] as num?)?.toInt() ?? 0,

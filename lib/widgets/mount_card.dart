@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/mount.dart';
+import '../theme/app_theme.dart';
 import '../utils/formatting.dart';
 import 'substat_chips.dart';
 
@@ -27,6 +28,7 @@ class MountCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
+      color: AppTheme.rarityTint(theme.colorScheme, mount.rarity.color),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(

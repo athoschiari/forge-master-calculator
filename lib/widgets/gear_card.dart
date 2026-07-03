@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/gear.dart';
+import '../theme/app_theme.dart';
 import '../utils/formatting.dart';
 import 'substat_chips.dart';
 
@@ -18,6 +19,7 @@ class GearCard extends StatelessWidget {
         piece.mainHealth > 0 ||
         piece.substats.isNotEmpty;
     return Card(
+      color: AppTheme.rarityTint(theme.colorScheme, piece.rarity.color),
       child: InkWell(
         onTap: onEdit,
         child: Padding(
@@ -27,8 +29,23 @@ class GearCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text(piece.slot.label, style: theme.textTheme.titleMedium),
-                  const Spacer(),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          piece.slot.label,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        Text(
+                          piece.rarity.label,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   if (piece.forgeLevel > 0)
                     Padding(
                       padding: const EdgeInsets.only(right: 4),

@@ -69,24 +69,36 @@ update (which would each serialize and write the whole list).
 `const` constructor, a `copyWith(...)` (all-nullable params, `field ??
 this.field`), and `toJson`/`fromJson` (defensive parsing, e.g.
 `(json['x'] as num?)?.toDouble() ?? 0`). Shared shape: `id`, `rarity`
-(`Rarity` enum — shared only by Pet and Mount, Gear has none), `level`
-(int), `mainDamage`/`mainHealth` (double, flat stats), `substats`
-(`List<Substat>`, capped at two by UI convention, not enforced by the
-model). `Pet` additionally has `type` (`PetType`: attack/balanced/health) —
-pet-only; `Mount` has no equivalent field.
+(`Rarity` enum — common/rare/epic/legendary/ultimate/mythic, shared only by
+Pet and Mount), `level` (int), `mainDamage`/`mainHealth` (double, flat
+stats), `substats` (`List<Substat>`, capped at two by UI convention, not
+enforced by the model). `Pet` additionally has `type` (`PetType`:
+attack/balanced/health) — pet-only; `Mount` has no equivalent field. Rarity
+parsing uses `Rarity.fromJson(String?)` (a defensive `byName`-style lookup
+that falls back to `Rarity.common` for a missing or unrecognised value)
+rather than a raw `Rarity.values.byName(...)` call, so renaming/removing an
+enum value never crashes on old persisted data.
 
 Items have **no name field anywhere** — in-game identity is `id` plus
 rarity/type/substats for display; none of that metadata affects
 calculations (`toStats()` only reads `mainDamage`/`mainHealth`/`substats`).
 
 `GearPiece` (`lib/models/gear.dart`) follows the same shape plus `slot`
-(its identity — one gear piece per slot, no inventory) and `forgeLevel`
+(its identity — one gear piece per slot, no inventory), `rarity`
+(`GearRarity` enum — gear has its own, unrelated tier list from
+Pet/Mount's `Rarity`: primitive/medieval/earlyModern/modern/space/
+interstellar/multiverse/quantum/underworld/divine) and `forgeLevel`
 (display metadata only). `lib/models/stats.dart` defines `Substat`
 (`type` + `value`) and `Stats` (aggregable `flatDamage`/`flatHealth`/`subs`
 map, with `operator +` used by the calculation engine to sum across
 equipped items). `lib/models/enums.dart` defines every enum used across the
-app (`Rarity`, `PetType`, `SubstatType`, `GearSlot`, `WeaponType`,
-`OptimizationMode`), each with a `.label` getter for display text.
+app (`Rarity`, `GearRarity`, `PetType`, `SubstatType`, `GearSlot`,
+`WeaponType`, `OptimizationMode`), each with a `.label` getter for display
+text. `lib/theme/app_theme.dart` adds `RarityColor`/`GearRarityColor`
+extensions (a `Color get color` getter on each rarity enum, kept out of
+`enums.dart` so the model layer stays Flutter-free) plus
+`AppTheme.rarityTint(scheme, color)`, used by all three item cards to tint
+their background by rarity.
 
 ## Widgets (`lib/widgets/`)
 
@@ -104,7 +116,9 @@ app (`Rarity`, `PetType`, `SubstatType`, `GearSlot`, `WeaponType`,
   read-only chip display, reused identically by gear/pet/mount editors.
 - `pet_card.dart`/`mount_card.dart`/`gear_card.dart` — pure display
   `StatelessWidget`s; all mutation is owned by the parent screen and passed
-  down as callbacks (`onEdit`/`onDuplicate`/`onDelete`/`onToggleEquip`).
+  down as callbacks (`onEdit`/`onDuplicate`/`onDelete`/`onToggleEquip`). Each
+  tints its own `Card`'s background via `AppTheme.rarityTint` keyed off the
+  item's rarity color, overriding the themed `color:` per-instance.
 
 ## Screens (`lib/screens/`)
 
