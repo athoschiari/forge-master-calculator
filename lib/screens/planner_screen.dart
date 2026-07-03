@@ -124,6 +124,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
           result: current,
           pets: state.equippedPets,
           mount: state.equippedMount,
+          proposed: moves.isEmpty ? null : moves.first.result,
         ),
         const SizedBox(height: 16),
         SegmentedButton<OptimizationMode>(

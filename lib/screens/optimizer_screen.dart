@@ -56,6 +56,7 @@ class _OptimizerScreenState extends State<OptimizerScreen> {
           result: state.currentBuild,
           pets: state.equippedPets,
           mount: state.equippedMount,
+          proposed: output.isEmpty ? null : output.best[_mode]!.build,
         ),
         const SizedBox(height: 16),
         SegmentedButton<OptimizationMode>(

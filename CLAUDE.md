@@ -126,7 +126,12 @@ their background by rarity.
   DPS, lifesteal/sec and heal/sec, the equipped pets/mount, and an (i)
   icon opening a dialog with the full substat breakdown (ordered by the
   shared `substatDisplayOrder` in `utils/formatting.dart`, also used by the
-  dashboard's aggregated-stats card).
+  dashboard's aggregated-stats card). Takes an optional `proposed`
+  `BuildResult` — when the caller passes one (Optimizer: the best candidate
+  for the selected mode; Planner: the top-ranked move) the (i) dialog
+  becomes a current -> proposed comparison, every row color-coded green if
+  the proposed value is higher and red if lower (a plain magnitude
+  comparison, not a per-stat "higher is actually better" judgement).
 
 ## Screens (`lib/screens/`)
 

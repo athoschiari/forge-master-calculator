@@ -10,18 +10,24 @@ import '../utils/formatting.dart';
 /// screens, so both stay anchored to what's actually equipped right now
 /// while they suggest changes to it: shown/calculated Damage and Health,
 /// per-second output, and the currently equipped pets/mount. The (i) icon
-/// opens the full substat breakdown without cluttering the banner itself.
+/// opens a detail dialog without cluttering the banner itself - just the
+/// substat breakdown normally, or a current -> proposed comparison (every
+/// row color-coded green/red for higher/lower) when the caller passes
+/// [proposed] - the screen's suggested alternative build (the Optimizer's
+/// best candidate for the selected mode, the Planner's top-ranked move).
 class BuildSummaryBanner extends StatelessWidget {
   const BuildSummaryBanner({
     super.key,
     required this.result,
     required this.pets,
     required this.mount,
+    this.proposed,
   });
 
   final BuildResult result;
   final List<Pet> pets;
   final Mount? mount;
+  final BuildResult? proposed;
 
   @override
   Widget build(BuildContext context) {
@@ -112,38 +118,92 @@ class BuildSummaryBanner extends StatelessWidget {
   }
 
   void _showSubstats(BuildContext context) {
-    final entries = [
+    final theme = Theme.of(context);
+    final p = proposed;
+
+    // Higher is green, lower is red - a plain magnitude comparison, not a
+    // per-stat "is higher actually better" judgement (e.g. skill cooldown).
+    Color deltaColor(double current, double next) {
+      if (next > current) return MetricColors.lifesteal;
+      if (next < current) return theme.colorScheme.error;
+      return theme.colorScheme.onSurfaceVariant;
+    }
+
+    Widget row(String label, double current, double? next,
+        String Function(double) fmt) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Expanded(child: Text(label)),
+            Text(fmt(current),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            if (next != null) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Icon(Icons.arrow_forward,
+                    size: 14, color: theme.colorScheme.onSurfaceVariant),
+              ),
+              Text(
+                fmt(next),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: deltaColor(current, next),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    final substatTypes = [
       for (final type in substatDisplayOrder)
-        if (result.aggregate.sub(type) != 0) type,
+        if (result.aggregate.sub(type) != 0 ||
+            (p?.aggregate.sub(type) ?? 0) != 0)
+          type,
     ];
+
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Substats'),
+        title: Text(p == null ? 'Substats' : 'Current -> Proposed'),
         content: SizedBox(
-          width: 320,
-          child: entries.isEmpty
-              ? const Text('No substats equipped.')
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final type in entries)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Expanded(child: Text(type.label)),
-                            Text(
-                              formatStatValue(
-                                  type, result.aggregate.sub(type)),
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
+          width: 360,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (p != null) ...[
+                  row('Shown Dmg', result.shownDamage, p.shownDamage,
+                      formatSheetCompact),
+                  row('Shown HP', result.shownHealth, p.shownHealth,
+                      formatSheetCompact),
+                  row('Calculated Dmg', result.totalDamage, p.totalDamage,
+                      formatCompact),
+                  row('Calculated HP', result.totalHealth, p.totalHealth,
+                      formatCompact),
+                  row('DPS', result.dps, p.dps, formatCompact),
+                  row('Lifesteal/sec', result.lifestealPerSecond,
+                      p.lifestealPerSecond, formatCompact),
+                  row('Heal/sec', result.healPerSecond, p.healPerSecond,
+                      formatCompact),
+                  const Divider(height: 20),
+                ],
+                if (substatTypes.isEmpty)
+                  const Text('No substats equipped.')
+                else
+                  for (final type in substatTypes)
+                    row(
+                      type.label,
+                      result.aggregate.sub(type),
+                      p?.aggregate.sub(type),
+                      (v) => formatStatValue(type, v),
+                    ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
