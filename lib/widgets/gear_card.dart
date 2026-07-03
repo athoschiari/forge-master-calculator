@@ -7,10 +7,19 @@ import 'substat_chips.dart';
 
 /// Card summarising the piece in one gear slot, with an edit action.
 class GearCard extends StatelessWidget {
-  const GearCard({super.key, required this.piece, required this.onEdit});
+  const GearCard({
+    super.key,
+    required this.piece,
+    required this.onEdit,
+    this.onImportScreenshot,
+  });
 
   final GearPiece piece;
   final VoidCallback onEdit;
+
+  /// Null hides the import affordance entirely (e.g. on non-mobile
+  /// platforms, where screenshot OCR isn't available).
+  final VoidCallback? onImportScreenshot;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +65,16 @@ class GearCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                  if (onImportScreenshot != null)
+                    IconButton(
+                      icon: const Icon(Icons.document_scanner, size: 18),
+                      tooltip: 'Import from screenshot',
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: onImportScreenshot,
+                    ),
+                  const SizedBox(width: 8),
                   const Icon(Icons.edit, size: 18),
                 ],
               ),

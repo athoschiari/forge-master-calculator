@@ -15,6 +15,7 @@ class MountCard extends StatelessWidget {
     required this.onEdit,
     required this.onDuplicate,
     required this.onDelete,
+    this.onImportScreenshot,
   });
 
   final Mount mount;
@@ -23,6 +24,10 @@ class MountCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
+
+  /// Null hides the "Import from screenshot" menu item entirely (e.g. on
+  /// non-mobile platforms, where screenshot OCR isn't available).
+  final VoidCallback? onImportScreenshot;
 
   @override
   Widget build(BuildContext context) {
@@ -58,16 +63,24 @@ class MountCard extends StatelessWidget {
                     switch (v) {
                       case 'edit':
                         onEdit();
+                      case 'import':
+                        onImportScreenshot?.call();
                       case 'duplicate':
                         onDuplicate();
                       case 'delete':
                         onDelete();
                     }
                   },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    if (onImportScreenshot != null)
+                      const PopupMenuItem(
+                        value: 'import',
+                        child: Text('Import from screenshot'),
+                      ),
+                    const PopupMenuItem(
+                        value: 'duplicate', child: Text('Duplicate')),
+                    const PopupMenuItem(value: 'delete', child: Text('Delete')),
                   ],
                 ),
               ],

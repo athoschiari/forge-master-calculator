@@ -8,9 +8,11 @@ import '../engine/optimizer.dart';
 import '../models/build.dart';
 import '../models/enums.dart';
 import '../models/gear.dart';
+import '../services/screenshot_import_flow.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatting.dart';
+import '../utils/platform_support.dart';
 import '../widgets/number_field.dart';
 import '../widgets/substat_editor.dart';
 
@@ -194,8 +196,20 @@ class _CandidateEditorState extends State<_CandidateEditor> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Candidate ${c.slot.label}',
-                style: Theme.of(context).textTheme.titleMedium),
+            Row(
+              children: [
+                Expanded(
+                  child: Text('Candidate ${c.slot.label}',
+                      style: Theme.of(context).textTheme.titleMedium),
+                ),
+                if (isMobilePlatform)
+                  IconButton(
+                    icon: const Icon(Icons.document_scanner),
+                    tooltip: 'Import from screenshot',
+                    onPressed: () => _importScreenshot(context),
+                  ),
+              ],
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -231,6 +245,17 @@ class _CandidateEditorState extends State<_CandidateEditor> {
         ),
       ),
     );
+  }
+
+  Future<void> _importScreenshot(BuildContext context) async {
+    final parsed = await ScreenshotImportFlow.run(context);
+    if (parsed == null || !context.mounted) return;
+    final c = widget.candidate;
+    widget.onChanged(c.copyWith(
+      mainDamage: parsed.mainDamage ?? c.mainDamage,
+      mainHealth: parsed.mainHealth ?? c.mainHealth,
+      substats: parsed.substats.isNotEmpty ? parsed.substats : c.substats,
+    ));
   }
 }
 

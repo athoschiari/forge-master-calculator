@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../engine/item_screenshot_parser.dart';
 import '../models/enums.dart';
 import '../models/mount.dart';
 import '../models/stats.dart';
+import '../services/screenshot_import_flow.dart';
 import '../state/app_state.dart';
+import '../utils/platform_support.dart';
 import '../widgets/mount_card.dart';
 import '../widgets/number_field.dart';
 import '../widgets/searchable_dropdown.dart';
@@ -133,6 +136,9 @@ class _MountsScreenState extends State<MountsScreen> {
                     onEdit: () => _edit(context, state, mount),
                     onDuplicate: () => state.duplicateMount(mount),
                     onDelete: () => state.deleteMount(mount.id),
+                    onImportScreenshot: isMobilePlatform
+                        ? () => _importFromScreenshot(context, state, mount)
+                        : null,
                   ),
               ],
             ),
@@ -172,6 +178,33 @@ class _MountsScreenState extends State<MountsScreen> {
     if (result == null || result.isEmpty) return;
     state.updateMounts(result);
   }
+
+  Future<void> _importFromScreenshot(
+    BuildContext context,
+    AppState state,
+    Mount mount,
+  ) async {
+    final parsed = await ScreenshotImportFlow.run(context);
+    if (parsed == null || !context.mounted) return;
+    final result = await showDialog<Mount>(
+      context: context,
+      builder: (_) => _MountEditorDialog(mount: _mergeParsed(mount, parsed)),
+    );
+    if (result != null) state.updateMount(result);
+  }
+
+  /// Merges OCR-parsed fields onto an existing mount: only fields OCR
+  /// actually recognised overwrite the existing values, matching this app's
+  /// "0/empty = unset" convention rather than clobbering fields OCR missed.
+  Mount _mergeParsed(Mount base, ParsedItemScreenshot p) => base.copyWith(
+        level: p.level ?? base.level,
+        mainDamage: p.mainDamage ?? base.mainDamage,
+        mainHealth: p.mainHealth ?? base.mainHealth,
+        substats: p.substats.isNotEmpty ? p.substats : base.substats,
+        rarity: p.rarityRawLabel == null
+            ? null
+            : matchByLabel(Rarity.values, (r) => r.label, p.rarityRawLabel!),
+      );
 }
 
 class _MountEditorDialog extends StatefulWidget {

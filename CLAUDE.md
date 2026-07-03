@@ -100,6 +100,53 @@ extensions (a `Color get color` getter on each rarity enum, kept out of
 `AppTheme.rarityTint(scheme, color)`, used by all three item cards to tint
 their background by rarity.
 
+## Screenshot OCR import
+
+Gear/pet/mount cards and the comparison screen's candidate editor can prefill
+their editor from a photo of the game's own item popup, instead of typing
+stats by hand. This is **mobile-only** (Android/iOS) — desktop/web work
+exactly as before, just without the import affordance.
+
+- `lib/utils/platform_support.dart` — `isMobilePlatform` (uses
+  `defaultTargetPlatform` from `foundation.dart`, not dart:io's `Platform`,
+  which fails to compile on web). Every screenshot-import entry point is
+  gated behind this getter; when it's `false` the callback passed to a card
+  is simply `null`, which the widget renders as "no import button" rather
+  than a disabled one.
+- `lib/engine/item_screenshot_parser.dart` — pure Dart (no Flutter/plugin
+  imports), so it's unit-tested directly against golden OCR text
+  (`test/engine/item_screenshot_parser_test.dart`) without a device.
+  `ItemScreenshotParser.parse(String)` turns raw recognised text into a
+  `ParsedItemScreenshot` (nullable `level`/`mainDamage`/`mainHealth`, up to
+  two `substats`, a raw `rarityRawLabel` string). Substat-label matching
+  falls back to a normalised comparison (case/punctuation-insensitive,
+  `"dmg"`→`"damage"`) on top of `SubstatType.fromLabel`, since the game's own
+  wording ("Ranged Damage") doesn't always exactly equal this app's label
+  ("Ranged Dmg"). The file also exports `matchByLabel<T>(values, labelOf,
+  raw)`, a generic label matcher used to resolve OCR'd rarity text against
+  either `Rarity.values` or `GearRarity.values` without hardcoding enum
+  members.
+- `lib/services/` — platform-dependent plugin wrappers, kept separate from
+  `lib/engine/`'s pure-Dart logic. `ocr_text_recognizer.dart` is a
+  conditional-export facade (`export 'x_stub.dart' if (dart.library.io)
+  'x_io.dart';`) so the web compiler never touches
+  `google_mlkit_text_recognition` (which has no web implementation and
+  touches dart:io directly) — this is the house pattern for any future
+  platform-restricted plugin. `screenshot_import_flow.dart`
+  (`ScreenshotImportFlow.run(context)`) is the one shared "pick image (camera
+  or gallery via `image_picker`) → OCR → parse" orchestration used by all
+  four call sites; it never blocks on a failed/partial recognition, it just
+  returns whatever was parsed (possibly empty) plus a non-blocking
+  `SnackBar`, and the caller always still opens its normal editor dialog for
+  review before Save.
+- Card widgets (`GearCard`/`PetCard`/`MountCard`) take an optional
+  `onImportScreenshot` (`VoidCallback?`) alongside `onEdit` — `null` hides
+  the affordance entirely. Each screen's handler seeds the *existing* editor
+  dialog (`_GearEditorDialog`/`_PetEditorDialog`/`_MountEditorDialog`) with
+  OCR-parsed fields merged onto the item's current values (only fields OCR
+  actually found overwrite anything), rather than adding a separate
+  import-specific UI.
+
 ## Widgets (`lib/widgets/`)
 
 - `SearchableDropdown<T>` — thin wrapper around Flutter's `DropdownMenu<T>`
@@ -116,7 +163,8 @@ their background by rarity.
   read-only chip display, reused identically by gear/pet/mount editors.
 - `pet_card.dart`/`mount_card.dart`/`gear_card.dart` — pure display
   `StatelessWidget`s; all mutation is owned by the parent screen and passed
-  down as callbacks (`onEdit`/`onDuplicate`/`onDelete`/`onToggleEquip`). Each
+  down as callbacks (`onEdit`/`onDuplicate`/`onDelete`/`onToggleEquip`, plus
+  an optional `onImportScreenshot` — see "Screenshot OCR import" above). Each
   tints its own `Card`'s background via `AppTheme.rarityTint` keyed off the
   item's rarity color, overriding the themed `color:` per-instance.
 - `BuildSummaryBanner` — "current build at a glance" card, shown atop the

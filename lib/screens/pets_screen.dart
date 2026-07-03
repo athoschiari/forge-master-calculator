@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../engine/item_screenshot_parser.dart';
 import '../models/enums.dart';
 import '../models/pet.dart';
 import '../models/stats.dart';
+import '../services/screenshot_import_flow.dart';
 import '../state/app_state.dart';
+import '../utils/platform_support.dart';
 import '../widgets/number_field.dart';
 import '../widgets/pet_card.dart';
 import '../widgets/searchable_dropdown.dart';
@@ -140,6 +143,9 @@ class _PetsScreenState extends State<PetsScreen> {
                     onEdit: () => _edit(context, state, pet),
                     onDuplicate: () => state.duplicatePet(pet),
                     onDelete: () => state.deletePet(pet.id),
+                    onImportScreenshot: isMobilePlatform
+                        ? () => _importFromScreenshot(context, state, pet)
+                        : null,
                   ),
               ],
             ),
@@ -179,6 +185,33 @@ class _PetsScreenState extends State<PetsScreen> {
     if (result == null || result.isEmpty) return;
     state.updatePets(result);
   }
+
+  Future<void> _importFromScreenshot(
+    BuildContext context,
+    AppState state,
+    Pet pet,
+  ) async {
+    final parsed = await ScreenshotImportFlow.run(context);
+    if (parsed == null || !context.mounted) return;
+    final result = await showDialog<Pet>(
+      context: context,
+      builder: (_) => _PetEditorDialog(pet: _mergeParsed(pet, parsed)),
+    );
+    if (result != null) state.updatePet(result);
+  }
+
+  /// Merges OCR-parsed fields onto an existing pet: only fields OCR actually
+  /// recognised overwrite the existing values, matching this app's
+  /// "0/empty = unset" convention rather than clobbering fields OCR missed.
+  Pet _mergeParsed(Pet base, ParsedItemScreenshot p) => base.copyWith(
+        level: p.level ?? base.level,
+        mainDamage: p.mainDamage ?? base.mainDamage,
+        mainHealth: p.mainHealth ?? base.mainHealth,
+        substats: p.substats.isNotEmpty ? p.substats : base.substats,
+        rarity: p.rarityRawLabel == null
+            ? null
+            : matchByLabel(Rarity.values, (r) => r.label, p.rarityRawLabel!),
+      );
 }
 
 class _PetEditorDialog extends StatefulWidget {
