@@ -2,6 +2,26 @@ import '../models/enums.dart';
 import '../models/pet.dart';
 import '../models/stats.dart';
 
+/// Substats in the same order the spreadsheet lists them on Profile
+/// Comparison. Shared by every screen that renders a full substat breakdown
+/// (the dashboard's aggregated-stats card, the build summary banner's info
+/// modal) so the ordering stays consistent app-wide.
+const List<SubstatType> substatDisplayOrder = [
+  SubstatType.critChance,
+  SubstatType.critDamage,
+  SubstatType.blockChance,
+  SubstatType.regen,
+  SubstatType.lifesteal,
+  SubstatType.doubleChance,
+  SubstatType.damage,
+  SubstatType.meleeDmg,
+  SubstatType.rangedDmg,
+  SubstatType.attackSpeed,
+  SubstatType.health,
+  SubstatType.skillDamage,
+  SubstatType.skillCooldown,
+];
+
 /// Formats a raw number the way the spreadsheet displays it: compact with a
 /// k/m/b suffix. e.g. 1631547.94 -> "1.63M", 121000 -> "121K".
 String formatCompact(double value) {

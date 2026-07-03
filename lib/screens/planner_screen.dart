@@ -9,6 +9,7 @@ import '../models/pet.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatting.dart';
+import '../widgets/build_summary_banner.dart';
 
 /// A single suggested change and its projected effect on the chosen metric.
 class _Move {
@@ -117,6 +118,12 @@ class _PlannerScreenState extends State<PlannerScreen> {
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
+        ),
+        const SizedBox(height: 16),
+        BuildSummaryBanner(
+          result: current,
+          pets: state.equippedPets,
+          mount: state.equippedMount,
         ),
         const SizedBox(height: 16),
         SegmentedButton<OptimizationMode>(

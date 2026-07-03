@@ -8,23 +8,6 @@ import '../theme/app_theme.dart';
 import '../utils/formatting.dart';
 import '../widgets/stat_card.dart';
 
-/// Substats in the same order the spreadsheet lists them on Profile Comparison.
-const List<SubstatType> _statOrder = [
-  SubstatType.critChance,
-  SubstatType.critDamage,
-  SubstatType.blockChance,
-  SubstatType.regen,
-  SubstatType.lifesteal,
-  SubstatType.doubleChance,
-  SubstatType.damage,
-  SubstatType.meleeDmg,
-  SubstatType.rangedDmg,
-  SubstatType.attackSpeed,
-  SubstatType.health,
-  SubstatType.skillDamage,
-  SubstatType.skillCooldown,
-];
-
 /// Full build readout: the same detail as the spreadsheet's Profile Comparison
 /// and Regenlifestealdps sheets — Build/Shown/Total damage and health, the
 /// per-second output and recovery, and every aggregated stat.
@@ -153,7 +136,7 @@ class Dashboard extends StatelessWidget {
               children: [
                 Text('Aggregated stats', style: theme.textTheme.titleMedium),
                 const SizedBox(height: 4),
-                for (final type in _statOrder)
+                for (final type in substatDisplayOrder)
                   _StatRow(
                     type: type,
                     value: build.aggregate.sub(type),

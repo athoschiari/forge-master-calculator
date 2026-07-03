@@ -119,6 +119,14 @@ their background by rarity.
   down as callbacks (`onEdit`/`onDuplicate`/`onDelete`/`onToggleEquip`). Each
   tints its own `Card`'s background via `AppTheme.rarityTint` keyed off the
   item's rarity color, overriding the themed `color:` per-instance.
+- `BuildSummaryBanner` — "current build at a glance" card, shown atop the
+  Planner and Optimizer screens (both suggest changes *relative to* the
+  current build, so they stay anchored to it). Takes a `BuildResult` plus
+  the equipped pets/mount and renders shown/calculated Damage and Health,
+  DPS, lifesteal/sec and heal/sec, the equipped pets/mount, and an (i)
+  icon opening a dialog with the full substat breakdown (ordered by the
+  shared `substatDisplayOrder` in `utils/formatting.dart`, also used by the
+  dashboard's aggregated-stats card).
 
 ## Screens (`lib/screens/`)
 

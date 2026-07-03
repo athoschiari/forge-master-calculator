@@ -6,6 +6,7 @@ import '../models/enums.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatting.dart';
+import '../widgets/build_summary_banner.dart';
 
 /// The optimizer. Evaluates every pet + mount combination over the current gear
 /// and presents the best loadout for each of the three objectives:
@@ -49,6 +50,12 @@ class _OptimizerScreenState extends State<OptimizerScreen> {
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
+        ),
+        const SizedBox(height: 16),
+        BuildSummaryBanner(
+          result: state.currentBuild,
+          pets: state.equippedPets,
+          mount: state.equippedMount,
         ),
         const SizedBox(height: 16),
         SegmentedButton<OptimizationMode>(
@@ -226,7 +233,25 @@ class _BestCard extends StatelessWidget {
                   accent: MetricColors.lifesteal,
                 ),
                 _Metric(
-                  label: 'Health',
+                  label: 'Shown Dmg',
+                  value: formatSheetCompact(build.shownDamage),
+                  highlight: false,
+                  accent: MetricColors.damage,
+                ),
+                _Metric(
+                  label: 'Calculated Dmg',
+                  value: formatCompact(build.totalDamage),
+                  highlight: false,
+                  accent: MetricColors.damage,
+                ),
+                _Metric(
+                  label: 'Shown HP',
+                  value: formatSheetCompact(build.shownHealth),
+                  highlight: false,
+                  accent: MetricColors.health,
+                ),
+                _Metric(
+                  label: 'Calculated HP',
                   value: formatCompact(build.totalHealth),
                   highlight: false,
                   accent: MetricColors.health,
