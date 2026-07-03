@@ -99,6 +99,12 @@ class _PetsScreenState extends State<PetsScreen> {
                 icon: const Icon(Icons.playlist_add, size: 18),
                 label: const Text('Batch insert'),
               ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: () => _massUpdate(context, state),
+                icon: const Icon(Icons.edit_note, size: 18),
+                label: const Text('Mass update'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -163,6 +169,15 @@ class _PetsScreenState extends State<PetsScreen> {
     } else {
       state.updatePet(result);
     }
+  }
+
+  Future<void> _massUpdate(BuildContext context, AppState state) async {
+    final result = await showDialog<List<Pet>>(
+      context: context,
+      builder: (_) => _PetMassUpdateDialog(pets: state.pets),
+    );
+    if (result == null || result.isEmpty) return;
+    state.updatePets(result);
   }
 }
 
@@ -285,6 +300,164 @@ class _PetEditorDialogState extends State<_PetEditorDialog> {
             ),
           ),
           child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Filter-then-apply dialog: pick criteria (rarity, type, level, main damage,
+/// main health — each skipped when left at its "any" value), then push a new
+/// Main Damage and/or Main Health value to every pet that matches all set
+/// criteria at once.
+class _PetMassUpdateDialog extends StatefulWidget {
+  const _PetMassUpdateDialog({required this.pets});
+  final List<Pet> pets;
+
+  @override
+  State<_PetMassUpdateDialog> createState() => _PetMassUpdateDialogState();
+}
+
+class _PetMassUpdateDialogState extends State<_PetMassUpdateDialog> {
+  Rarity? _rarity;
+  PetType? _type;
+  int _level = 0;
+  double _mainDamage = 0;
+  double _mainHealth = 0;
+
+  double _newDamage = 0;
+  double _newHealth = 0;
+
+  List<Pet> _matches() => widget.pets.where((p) {
+        if (_rarity != null && p.rarity != _rarity) return false;
+        if (_type != null && p.type != _type) return false;
+        if (_level > 0 && p.level != _level) return false;
+        if (_mainDamage > 0 && p.mainDamage != _mainDamage) return false;
+        if (_mainHealth > 0 && p.mainHealth != _mainHealth) return false;
+        return true;
+      }).toList();
+
+  @override
+  Widget build(BuildContext context) {
+    final matches = _matches();
+    final canApply = matches.isNotEmpty && (_newDamage > 0 || _newHealth > 0);
+
+    return AlertDialog(
+      title: const Text('Mass update pets'),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Filters', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: SearchableDropdown<Rarity?>(
+                      value: _rarity,
+                      label: const Text('Rarity'),
+                      entries: [
+                        const DropdownMenuEntry(value: null, label: 'Any'),
+                        for (final r in Rarity.values)
+                          DropdownMenuEntry(value: r, label: r.label),
+                      ],
+                      onChanged: (r) => setState(() => _rarity = r),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SearchableDropdown<PetType?>(
+                      value: _type,
+                      label: const Text('Type'),
+                      entries: [
+                        const DropdownMenuEntry(value: null, label: 'Any'),
+                        for (final t in PetType.values)
+                          DropdownMenuEntry(value: t, label: t.label),
+                      ],
+                      onChanged: (t) => setState(() => _type = t),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              NumberField(
+                label: 'Level (any if empty)',
+                value: _level.toDouble(),
+                allowShorthand: false,
+                onChanged: (v) =>
+                    setState(() => _level = v.round().clamp(0, 999).toInt()),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: NumberField(
+                      label: 'Main Damage (any if empty)',
+                      value: _mainDamage,
+                      onChanged: (v) => setState(() => _mainDamage = v),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: NumberField(
+                      label: 'Main Health (any if empty)',
+                      value: _mainHealth,
+                      onChanged: (v) => setState(() => _mainHealth = v),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text('${matches.length} pet${matches.length == 1 ? '' : 's'} match',
+                  style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 16),
+              Text('New values', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: NumberField(
+                      label: 'Main Damage (leave empty to skip)',
+                      value: _newDamage,
+                      onChanged: (v) => setState(() => _newDamage = v),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: NumberField(
+                      label: 'Main Health (leave empty to skip)',
+                      value: _newHealth,
+                      onChanged: (v) => setState(() => _newHealth = v),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: canApply
+              ? () => Navigator.pop(
+                    context,
+                    [
+                      for (final p in matches)
+                        p.copyWith(
+                          mainDamage: _newDamage > 0 ? _newDamage : null,
+                          mainHealth: _newHealth > 0 ? _newHealth : null,
+                        ),
+                    ],
+                  )
+              : null,
+          child: Text('Apply to ${matches.length} pet${matches.length == 1 ? '' : 's'}'),
         ),
       ],
     );

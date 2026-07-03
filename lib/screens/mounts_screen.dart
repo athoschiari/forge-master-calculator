@@ -92,6 +92,12 @@ class _MountsScreenState extends State<MountsScreen> {
                 icon: const Icon(Icons.playlist_add, size: 18),
                 label: const Text('Batch insert'),
               ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: () => _massUpdate(context, state),
+                icon: const Icon(Icons.edit_note, size: 18),
+                label: const Text('Mass update'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -156,6 +162,15 @@ class _MountsScreenState extends State<MountsScreen> {
     } else {
       state.updateMount(result);
     }
+  }
+
+  Future<void> _massUpdate(BuildContext context, AppState state) async {
+    final result = await showDialog<List<Mount>>(
+      context: context,
+      builder: (_) => _MountMassUpdateDialog(mounts: state.mounts),
+    );
+    if (result == null || result.isEmpty) return;
+    state.updateMounts(result);
   }
 }
 
@@ -262,6 +277,154 @@ class _MountEditorDialogState extends State<_MountEditorDialog> {
             ),
           ),
           child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Filter-then-apply dialog: pick criteria (rarity, level, main damage, main
+/// health — each skipped when left at its "any" value), then push a new Main
+/// Damage and/or Main Health value to every mount that matches all set
+/// criteria at once.
+class _MountMassUpdateDialog extends StatefulWidget {
+  const _MountMassUpdateDialog({required this.mounts});
+  final List<Mount> mounts;
+
+  @override
+  State<_MountMassUpdateDialog> createState() =>
+      _MountMassUpdateDialogState();
+}
+
+class _MountMassUpdateDialogState extends State<_MountMassUpdateDialog> {
+  Rarity? _rarity;
+  int _level = 0;
+  double _mainDamage = 0;
+  double _mainHealth = 0;
+
+  double _newDamage = 0;
+  double _newHealth = 0;
+
+  List<Mount> _matches() => widget.mounts.where((m) {
+        if (_rarity != null && m.rarity != _rarity) return false;
+        if (_level > 0 && m.level != _level) return false;
+        if (_mainDamage > 0 && m.mainDamage != _mainDamage) return false;
+        if (_mainHealth > 0 && m.mainHealth != _mainHealth) return false;
+        return true;
+      }).toList();
+
+  @override
+  Widget build(BuildContext context) {
+    final matches = _matches();
+    final canApply = matches.isNotEmpty && (_newDamage > 0 || _newHealth > 0);
+
+    return AlertDialog(
+      title: const Text('Mass update mounts'),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Filters', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: SearchableDropdown<Rarity?>(
+                      value: _rarity,
+                      label: const Text('Rarity'),
+                      entries: [
+                        const DropdownMenuEntry(value: null, label: 'Any'),
+                        for (final r in Rarity.values)
+                          DropdownMenuEntry(value: r, label: r.label),
+                      ],
+                      onChanged: (r) => setState(() => _rarity = r),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: NumberField(
+                      label: 'Level (any if empty)',
+                      value: _level.toDouble(),
+                      allowShorthand: false,
+                      onChanged: (v) => setState(
+                          () => _level = v.round().clamp(0, 999).toInt()),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: NumberField(
+                      label: 'Main Damage (any if empty)',
+                      value: _mainDamage,
+                      onChanged: (v) => setState(() => _mainDamage = v),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: NumberField(
+                      label: 'Main Health (any if empty)',
+                      value: _mainHealth,
+                      onChanged: (v) => setState(() => _mainHealth = v),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                  '${matches.length} mount${matches.length == 1 ? '' : 's'} match',
+                  style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 16),
+              Text('New values', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: NumberField(
+                      label: 'Main Damage (leave empty to skip)',
+                      value: _newDamage,
+                      onChanged: (v) => setState(() => _newDamage = v),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: NumberField(
+                      label: 'Main Health (leave empty to skip)',
+                      value: _newHealth,
+                      onChanged: (v) => setState(() => _newHealth = v),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: canApply
+              ? () => Navigator.pop(
+                    context,
+                    [
+                      for (final m in matches)
+                        m.copyWith(
+                          mainDamage: _newDamage > 0 ? _newDamage : null,
+                          mainHealth: _newHealth > 0 ? _newHealth : null,
+                        ),
+                    ],
+                  )
+              : null,
+          child: Text(
+              'Apply to ${matches.length} mount${matches.length == 1 ? '' : 's'}'),
         ),
       ],
     );

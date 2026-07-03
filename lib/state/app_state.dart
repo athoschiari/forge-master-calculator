@@ -106,6 +106,15 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Replaces multiple pets at once (batch update), matched by id.
+  void updatePets(List<Pet> pets) {
+    if (pets.isEmpty) return;
+    final byId = {for (final p in pets) p.id: p};
+    _pets = [for (final p in _pets) byId[p.id] ?? p];
+    _persistPets();
+    notifyListeners();
+  }
+
   void deletePet(String id) {
     _pets = _pets.where((p) => p.id != id).toList();
     _equippedPetIds = _equippedPetIds.where((e) => e != id).toList();
@@ -154,6 +163,15 @@ class AppState extends ChangeNotifier {
 
   void updateMount(Mount mount) {
     _mounts = [for (final m in _mounts) if (m.id == mount.id) mount else m];
+    _persistMounts();
+    notifyListeners();
+  }
+
+  /// Replaces multiple mounts at once (batch update), matched by id.
+  void updateMounts(List<Mount> mounts) {
+    if (mounts.isEmpty) return;
+    final byId = {for (final m in mounts) m.id: m};
+    _mounts = [for (final m in _mounts) byId[m.id] ?? m];
     _persistMounts();
     notifyListeners();
   }
