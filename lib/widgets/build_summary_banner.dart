@@ -62,26 +62,6 @@ class BuildSummaryBanner extends StatelessWidget {
               runSpacing: 10,
               children: [
                 _Stat(
-                  label: 'Shown Dmg',
-                  value: formatSheetCompact(result.shownDamage),
-                  accent: MetricColors.damage,
-                ),
-                _Stat(
-                  label: 'Shown HP',
-                  value: formatSheetCompact(result.shownHealth),
-                  accent: MetricColors.health,
-                ),
-                _Stat(
-                  label: 'Calculated Dmg',
-                  value: formatCompact(result.totalDamage),
-                  accent: MetricColors.damage,
-                ),
-                _Stat(
-                  label: 'Calculated HP',
-                  value: formatCompact(result.totalHealth),
-                  accent: MetricColors.health,
-                ),
-                _Stat(
                   label: 'DPS',
                   value: formatCompact(result.dps),
                   accent: MetricColors.dps,
@@ -95,6 +75,26 @@ class BuildSummaryBanner extends StatelessWidget {
                   label: 'Heal/sec',
                   value: formatCompact(result.healPerSecond),
                   accent: MetricColors.lifesteal,
+                ),
+                _Stat(
+                  label: 'Shown Dmg',
+                  value: formatSheetCompact(result.shownDamage),
+                  accent: MetricColors.damage,
+                ),
+                _Stat(
+                  label: 'Calculated Dmg',
+                  value: formatCompact(result.totalDamage),
+                  accent: MetricColors.damage,
+                ),
+                _Stat(
+                  label: 'Shown HP',
+                  value: formatSheetCompact(result.shownHealth),
+                  accent: MetricColors.health,
+                ),
+                _Stat(
+                  label: 'Calculated HP',
+                  value: formatCompact(result.totalHealth),
+                  accent: MetricColors.health,
                 ),
               ],
             ),
@@ -184,18 +184,18 @@ class BuildSummaryBanner extends StatelessWidget {
 
     return [
       if (p != null) ...[
-        _row(context, 'Shown Dmg', result.shownDamage, p.shownDamage,
-            formatSheetCompact),
-        _row(context, 'Shown HP', result.shownHealth, p.shownHealth,
-            formatSheetCompact),
-        _row(context, 'Calculated Dmg', result.totalDamage, p.totalDamage,
-            formatCompact),
-        _row(context, 'Calculated HP', result.totalHealth, p.totalHealth,
-            formatCompact),
         _row(context, 'DPS', result.dps, p.dps, formatCompact),
         _row(context, 'Lifesteal/sec', result.lifestealPerSecond,
             p.lifestealPerSecond, formatCompact),
         _row(context, 'Heal/sec', result.healPerSecond, p.healPerSecond,
+            formatCompact),
+        _row(context, 'Shown Dmg', result.shownDamage, p.shownDamage,
+            formatSheetCompact),
+        _row(context, 'Calculated Dmg', result.totalDamage, p.totalDamage,
+            formatCompact),
+        _row(context, 'Shown HP', result.shownHealth, p.shownHealth,
+            formatSheetCompact),
+        _row(context, 'Calculated HP', result.totalHealth, p.totalHealth,
             formatCompact),
         const Divider(height: 20),
       ],

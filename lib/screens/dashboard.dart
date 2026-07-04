@@ -65,7 +65,7 @@ class Dashboard extends StatelessWidget {
           crossAxisCount: wide ? 4 : 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.7,
+          childAspectRatio: 1.1,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
           children: [

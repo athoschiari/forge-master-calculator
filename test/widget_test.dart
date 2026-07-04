@@ -24,6 +24,6 @@ void main() {
     // The dashboard header and the nav destination both read "Dashboard".
     expect(find.text('Dashboard'), findsWidgets);
     // Headline metric labels are present.
-    expect(find.text('DPS'), findsWidgets);
+    expect(find.text('Dmg / sec'), findsWidgets);
   });
 }
