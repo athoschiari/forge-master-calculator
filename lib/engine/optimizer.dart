@@ -62,8 +62,9 @@ class OptimizerOutput {
 }
 
 /// Evaluates every possible pet + mount combination over the current gear and
-/// ranks them for each of the three objectives: DPS, lifesteal/sec, and a
-/// 50/50 balanced blend of the two (normalised so neither dominates by scale).
+/// ranks them for each of the four objectives: DPS, lifesteal/sec, heal/sec
+/// (lifesteal + regen combined), and a 50/50 balanced blend of DPS and
+/// lifesteal/sec (normalised so neither dominates by scale).
 class Optimizer {
   const Optimizer._();
 

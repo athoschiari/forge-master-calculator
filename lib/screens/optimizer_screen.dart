@@ -9,8 +9,9 @@ import '../utils/formatting.dart';
 import '../widgets/build_summary_banner.dart';
 
 /// The optimizer. Evaluates every pet + mount combination over the current gear
-/// and presents the best loadout for each of the three objectives:
-///   1. Lifesteal/sec  2. DPS  3. Balanced (50/50 of the two)
+/// and presents the best loadout for each of the four objectives:
+///   1. Lifesteal/sec  2. DPS  3. Heal/sec (lifesteal + regen)
+///   4. Balanced (50/50 of DPS and Lifesteal/sec)
 /// The player can switch objective and equip any recommended combination.
 class OptimizerScreen extends StatefulWidget {
   const OptimizerScreen({super.key});
