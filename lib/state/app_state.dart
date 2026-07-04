@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../engine/best_in_slot.dart';
 import '../engine/calculator.dart';
 import '../engine/optimizer.dart';
 import '../engine/spreadsheet_import.dart';
@@ -236,6 +237,15 @@ class AppState extends ChangeNotifier {
         mounts: _mounts,
         config: _config,
         petSlots: _petSlots,
+      );
+
+  /// Highest Lifesteal/sec achievable if every current gear piece's existing
+  /// substat slots rolled ideally, holding pets, mount and main stats fixed.
+  BestInSlotResult bestInSlotForLifesteal() => BestInSlot.solve(
+        gear: _gear,
+        pets: equippedPets,
+        mount: equippedMount,
+        config: _config,
       );
 
   // --- Persistence -------------------------------------------------------------

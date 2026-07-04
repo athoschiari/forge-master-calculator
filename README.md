@@ -12,6 +12,11 @@ and finds the best pet + mount loadout for three objectives:
 2. **DPS** — damage per second
 3. **Balanced** — a 50/50 blend of the two, normalised so neither dominates
 
+The Gear tab also has a **best-in-slot substat** calculator: holding your
+pets, mount and gear main stats fixed, it works out the highest Lifesteal/sec
+you could reach if every gear piece's existing substat slots rolled the ideal
+type at its maximum value.
+
 Material 3, dark by default. Local JSON persistence (no server, no login).
 Works on Flutter Web, desktop and Android from a single codebase.
 
@@ -65,6 +70,32 @@ Key points from the sheet:
   already-forged values, exactly like the sheet.
 
 To recalibrate after a game patch, edit `lib/engine/formulas.dart` only.
+
+### Best-in-slot gear substats
+
+The Gear tab's best-in-slot card (`lib/engine/best_in_slot.dart`) answers
+"what's my Lifesteal/sec ceiling if my gear substats were ideal?" It keeps
+pets, mount and every gear piece's main stats fixed, and searches every way
+to fill each gear piece's *existing* substat slots (a piece with one rolled
+substat only gets one slot, an unrolled piece gets none) with the type/max
+combination that maximises Lifesteal/sec, never repeating a type on the same
+piece. The per-substat maximum gear roll:
+
+| Substat        | Max roll |
+| -------------- | -------- |
+| Crit chance    | 12%      |
+| Crit damage    | 80%      |
+| Block chance   | 5%       |
+| Health regen   | 4%       |
+| Lifesteal      | 20%      |
+| Double chance  | 20%      |
+| Damage         | 15%      |
+| Melee damage   | 50%      |
+| Ranged damage  | 15%      |
+| Attack speed   | 40       |
+| Skill damage   | 30%      |
+| Skill cooldown | 7%       |
+| Health         | 15%      |
 
 ## Project layout
 

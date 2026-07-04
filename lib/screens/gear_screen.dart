@@ -5,6 +5,7 @@ import '../models/enums.dart';
 import '../models/gear.dart';
 import '../models/stats.dart';
 import '../state/app_state.dart';
+import '../widgets/build_summary_banner.dart';
 import '../widgets/gear_card.dart';
 import '../widgets/number_field.dart';
 import '../widgets/searchable_dropdown.dart';
@@ -23,6 +24,7 @@ class GearScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final width = MediaQuery.of(context).size.width;
     final columns = width > 1300 ? 3 : (width > 900 ? 2 : 1);
+    final bestInSlot = state.bestInSlotForLifesteal();
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -37,6 +39,23 @@ class GearScreen extends StatelessWidget {
               label: const Text('Compare candidate'),
             ),
           ],
+        ),
+        const SizedBox(height: 16),
+        BuildSummaryBanner(
+          result: state.currentBuild,
+          pets: state.equippedPets,
+          mount: state.equippedMount,
+          proposed: bestInSlot.totalSlots == 0 ? null : bestInSlot.build,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Best-in-slot ceiling: the highest Lifesteal/sec possible if every '
+          'gear piece\'s existing substat slots rolled the ideal type at its '
+          'maximum value, keeping pets, mount and main stats as they are now. '
+          'Open the (i) above for the full comparison.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 16),
         GridView.count(
