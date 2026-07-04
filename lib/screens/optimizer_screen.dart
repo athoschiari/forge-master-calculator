@@ -194,7 +194,8 @@ class _BestCard extends StatelessWidget {
         : describePiece(
             substats: candidate.mount!.substats,
             damage: candidate.mount!.mainDamage,
-            health: candidate.mount!.mainHealth);
+            health: candidate.mount!.mainHealth,
+            rarity: candidate.mount!.rarity);
 
     return Card(
       color: accent.withValues(alpha: 0.10),
@@ -371,7 +372,8 @@ class _RankRow extends StatelessWidget {
         : describePiece(
             substats: candidate.mount!.substats,
             damage: candidate.mount!.mainDamage,
-            health: candidate.mount!.mainHealth);
+            health: candidate.mount!.mainHealth,
+            rarity: candidate.mount!.rarity);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),

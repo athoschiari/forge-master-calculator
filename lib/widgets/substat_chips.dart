@@ -20,17 +20,23 @@ class SubstatChips extends StatelessWidget {
             ),
       );
     }
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        for (final s in substats)
-          Chip(
-            visualDensity: VisualDensity.compact,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            label: Text(
-              formatSubstat(s),
-              style: Theme.of(context).textTheme.labelMedium,
+        for (var i = 0; i < substats.length; i++)
+          Padding(
+            padding: EdgeInsets.only(bottom: i == substats.length - 1 ? 0 : 6),
+            child: Chip(
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              label: Text(
+                formatSubstat(substats[i]),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
             ),
           ),
       ],

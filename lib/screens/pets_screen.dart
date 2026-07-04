@@ -29,20 +29,25 @@ class _PetsScreenState extends State<PetsScreen> {
   String _query = '';
   _PetSort _sort = _PetSort.damage;
 
-  List<Pet> _visible(List<Pet> pets) {
+  List<Pet> _visible(AppState state) {
     final q = _query.toLowerCase();
-    final filtered = pets.where((p) {
+    final filtered = state.pets.where((p) {
       if (q.isEmpty) return true;
       return p.type.label.toLowerCase().contains(q) ||
           p.rarity.label.toLowerCase().contains(q) ||
           p.substats.any((s) => s.type.label.toLowerCase().contains(q));
     }).toList();
-    switch (_sort) {
-      case _PetSort.damage:
-        filtered.sort((a, b) => b.mainDamage.compareTo(a.mainDamage));
-      case _PetSort.health:
-        filtered.sort((a, b) => b.mainHealth.compareTo(a.mainHealth));
-    }
+    filtered.sort((a, b) {
+      final aEquipped = state.isPetEquipped(a.id);
+      final bEquipped = state.isPetEquipped(b.id);
+      if (aEquipped != bEquipped) return aEquipped ? -1 : 1;
+      switch (_sort) {
+        case _PetSort.damage:
+          return b.mainDamage.compareTo(a.mainDamage);
+        case _PetSort.health:
+          return b.mainHealth.compareTo(a.mainHealth);
+      }
+    });
     return filtered;
   }
 
@@ -50,7 +55,7 @@ class _PetsScreenState extends State<PetsScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final theme = Theme.of(context);
-    final pets = _visible(state.pets);
+    final pets = _visible(state);
     final width = MediaQuery.of(context).size.width;
     final columns = width > 1300 ? 3 : (width > 900 ? 2 : 1);
 

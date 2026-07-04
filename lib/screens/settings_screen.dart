@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -300,6 +302,14 @@ class SettingsScreen extends StatelessWidget {
       fileName: 'forge-master-backup.json',
       bytes: bytes,
     );
+    // On Windows/Linux/macOS, file_picker's saveFile() only returns the
+    // chosen path - unlike web and mobile, it never writes `bytes` itself -
+    // so the backup silently never lands on disk unless we write it here.
+    if (!kIsWeb &&
+        path != null &&
+        (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+      await File(path).writeAsBytes(bytes);
+    }
     if (!context.mounted) return;
     _snack(context, path == null ? 'Export cancelled.' : 'Exported backup.');
   }

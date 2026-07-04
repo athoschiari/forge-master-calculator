@@ -63,7 +63,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
       final result = buildWith(equippedPets, mount);
       moves.add(_Move(
         label: 'Equip mount: '
-            '${describePiece(substats: mount.substats, damage: mount.mainDamage, health: mount.mainHealth)}',
+            '${describePiece(substats: mount.substats, damage: mount.mainDamage, health: mount.mainHealth, rarity: mount.rarity)}',
         delta: _value(result) - baseline,
         result: result,
       ));

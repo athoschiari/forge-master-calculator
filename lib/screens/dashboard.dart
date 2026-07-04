@@ -173,7 +173,8 @@ class Dashboard extends StatelessWidget {
                       : describePiece(
                           substats: state.equippedMount!.substats,
                           damage: state.equippedMount!.mainDamage,
-                          health: state.equippedMount!.mainHealth),
+                          health: state.equippedMount!.mainHealth,
+                          rarity: state.equippedMount!.rarity),
                 ),
               ],
             ),

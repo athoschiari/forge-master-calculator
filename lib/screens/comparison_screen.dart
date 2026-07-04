@@ -488,7 +488,8 @@ class _Worthiness extends StatelessWidget {
         : describePiece(
             substats: c.mount!.substats,
             damage: c.mount!.mainDamage,
-            health: c.mount!.mainHealth);
+            health: c.mount!.mainHealth,
+            rarity: c.mount!.rarity);
     return 'Best: $pets  +  $mount';
   }
 }

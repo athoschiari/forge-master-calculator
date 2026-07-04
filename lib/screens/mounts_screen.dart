@@ -30,19 +30,24 @@ class _MountsScreenState extends State<MountsScreen> {
   String _query = '';
   _MountSort _sort = _MountSort.damage;
 
-  List<Mount> _visible(List<Mount> mounts) {
+  List<Mount> _visible(AppState state) {
     final q = _query.toLowerCase();
-    final filtered = mounts.where((m) {
+    final filtered = state.mounts.where((m) {
       if (q.isEmpty) return true;
       return m.rarity.label.toLowerCase().contains(q) ||
           m.substats.any((s) => s.type.label.toLowerCase().contains(q));
     }).toList();
-    switch (_sort) {
-      case _MountSort.damage:
-        filtered.sort((a, b) => b.mainDamage.compareTo(a.mainDamage));
-      case _MountSort.health:
-        filtered.sort((a, b) => b.mainHealth.compareTo(a.mainHealth));
-    }
+    filtered.sort((a, b) {
+      final aEquipped = state.isMountEquipped(a.id);
+      final bEquipped = state.isMountEquipped(b.id);
+      if (aEquipped != bEquipped) return aEquipped ? -1 : 1;
+      switch (_sort) {
+        case _MountSort.damage:
+          return b.mainDamage.compareTo(a.mainDamage);
+        case _MountSort.health:
+          return b.mainHealth.compareTo(a.mainHealth);
+      }
+    });
     return filtered;
   }
 
@@ -50,7 +55,7 @@ class _MountsScreenState extends State<MountsScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final theme = Theme.of(context);
-    final mounts = _visible(state.mounts);
+    final mounts = _visible(state);
     final width = MediaQuery.of(context).size.width;
     final columns = width > 1300 ? 3 : (width > 900 ? 2 : 1);
 

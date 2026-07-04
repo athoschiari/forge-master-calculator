@@ -102,21 +102,27 @@ String formatSubstat(Substat substat) =>
 
 /// A comma-joined description of a list of substats, used to identify pets and
 /// mounts (which have no names in game). Falls back to the main stats when a
-/// piece has no substats.
+/// piece has no substats. Leads with the rarity (when given) since that's the
+/// fastest way to tell two similarly-rolled pieces apart at a glance -
+/// notably in optimizer/planner suggestions, which otherwise read as a wall
+/// of near-identical substat lists.
 String describePiece({
   required List<Substat> substats,
   required double damage,
   required double health,
+  Rarity? rarity,
 }) {
+  final prefix = rarity == null ? '' : '${rarity.label} - ';
   if (substats.isNotEmpty) {
-    return substats.map(formatSubstat).join(', ');
+    return '$prefix${substats.map(formatSubstat).join(', ')}';
   }
-  return 'DMG ${formatCompact(damage)} / HP ${formatCompact(health)}';
+  return '${prefix}DMG ${formatCompact(damage)} / HP ${formatCompact(health)}';
 }
 
-/// A pet's description including its type: "Attack - Lifesteal 18.2%, ...".
+/// A pet's description including its rarity and type: "Legendary Attack -
+/// Lifesteal 18.2%, ...".
 String describePet(Pet pet) {
-  return '${pet.type.label} - '
+  return '${pet.rarity.label} ${pet.type.label} - '
       '${describePiece(substats: pet.substats, damage: pet.mainDamage, health: pet.mainHealth)}';
 }
 
