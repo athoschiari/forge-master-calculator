@@ -239,13 +239,20 @@ class AppState extends ChangeNotifier {
         petSlots: _petSlots,
       );
 
-  /// Highest Lifesteal/sec achievable if every current gear piece's existing
-  /// substat slots rolled ideally, holding pets, mount and main stats fixed.
-  BestInSlotResult bestInSlotForLifesteal() => BestInSlot.solve(
+  /// Ceiling for [mode] if every current gear piece's existing substat slots
+  /// rolled ideally, holding main stats fixed. Pets/mount are held fixed too
+  /// when included, or left out of the calculation entirely when not.
+  BestInSlotResult bestInSlot({
+    required OptimizationMode mode,
+    bool includePets = true,
+    bool includeMount = true,
+  }) =>
+      BestInSlot.solve(
         gear: _gear,
-        pets: equippedPets,
-        mount: equippedMount,
+        pets: includePets ? equippedPets : const [],
+        mount: includeMount ? equippedMount : null,
         config: _config,
+        mode: mode,
       );
 
   // --- Persistence -------------------------------------------------------------

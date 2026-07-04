@@ -56,39 +56,51 @@ class BestInSlotResult {
   });
 }
 
-/// Answers "if every gear piece's substats rolled ideally, what's the highest
-/// Lifesteal/sec I could reach?" Pets, mount and every gear piece's main
-/// stats (Damage/Health) are held fixed at their current build contribution -
-/// only gear *substats* are re-optimised, and only up to the number of
-/// substat slots a piece already has (a piece with one rolled substat is
-/// searched with one slot, not two; an empty piece contributes none). A
-/// single piece's two slots are never assigned the same type, matching the
-/// game's no-duplicate-substat-per-item rule.
+/// Answers "if every gear piece's substats rolled ideally, what's my ceiling
+/// for a chosen objective (DPS, Lifesteal/sec, or both combined)?" Every gear
+/// piece's main stats (Damage/Health) are always held fixed at their current
+/// build contribution; pets and mount are fixed too, but the caller may pass
+/// an empty list / null to exclude them from the calculation entirely. Only
+/// gear *substats* are re-optimised, and only up to the number of substat
+/// slots a piece already has (a piece with one rolled substat is searched
+/// with one slot, not two; an empty piece contributes none). A single piece's
+/// two slots are never assigned the same type, matching the game's
+/// no-duplicate-substat-per-item rule.
 class BestInSlot {
   const BestInSlot._();
 
-  /// Substat types [Formulas.lifestealPerSecond] actually reads. Block
-  /// chance, regen, health, skill damage/cooldown and the melee/ranged pair
-  /// not matching [WeaponType] never move that formula, so a slot spent there
-  /// can never beat spending it on one of these - they're excluded from the
-  /// search entirely rather than wasting branches on a type that can only tie.
-  static List<SubstatType> _relevantTypes(WeaponType weaponType) => [
-        SubstatType.critChance,
-        SubstatType.critDamage,
-        SubstatType.lifesteal,
-        SubstatType.doubleChance,
-        SubstatType.damage,
-        weaponType == WeaponType.melee
-            ? SubstatType.meleeDmg
-            : SubstatType.rangedDmg,
-        SubstatType.attackSpeed,
-      ];
+  /// Substat types that can move the needle for [mode], per the formulas in
+  /// `formulas.dart`: [Formulas.dps] reads crit chance/damage, double chance,
+  /// damage%, the melee-or-ranged% matching [WeaponType], and attack speed;
+  /// [Formulas.lifestealPerSecond] reads all of those plus lifesteal% itself.
+  /// Block chance, regen, health, skill damage/cooldown and the *other*
+  /// melee/ranged type never appear in either formula, so a slot spent there
+  /// can never beat spending it on one of these - excluded entirely rather
+  /// than wasting search branches on a type that can only tie.
+  static List<SubstatType> _relevantTypes(
+    WeaponType weaponType,
+    OptimizationMode mode,
+  ) {
+    final dpsTypes = [
+      SubstatType.critChance,
+      SubstatType.critDamage,
+      SubstatType.doubleChance,
+      SubstatType.damage,
+      weaponType == WeaponType.melee
+          ? SubstatType.meleeDmg
+          : SubstatType.rangedDmg,
+      SubstatType.attackSpeed,
+    ];
+    if (mode == OptimizationMode.dps) return dpsTypes;
+    return [...dpsTypes, SubstatType.lifesteal];
+  }
 
   static BestInSlotResult solve({
     required Map<GearSlot, GearPiece?> gear,
     required List<Pet> pets,
     required Mount? mount,
     required BuildConfig config,
+    required OptimizationMode mode,
   }) {
     var fixed = Stats.zero;
     for (final piece in gear.values) {
@@ -123,7 +135,7 @@ class BestInSlot {
       );
     }
 
-    final types = _relevantTypes(config.weaponType);
+    final types = _relevantTypes(config.weaponType, mode);
     final maxPerSlot = [for (final t in types) SubstatCaps.gearMax[t] ?? 0];
 
     var bestScore = -1.0;
@@ -139,7 +151,7 @@ class BestInSlot {
       if (last) {
         if (remaining <= itemCount) {
           counts[index] = remaining;
-          final score = _score(fixed, config, types, maxPerSlot, counts);
+          final score = _score(fixed, config, mode, types, maxPerSlot, counts);
           if (score > bestScore) {
             bestScore = score;
             bestCounts = List.of(counts);
@@ -174,9 +186,14 @@ class BestInSlot {
     );
   }
 
+  /// Same objective definition as [BuildResult.objectiveValue]: balanced is
+  /// the raw DPS + Lifesteal/sec sum (this search evaluates one aggregate at
+  /// a time, not a discrete candidate set, so there's nothing to normalise
+  /// against - unlike [Optimizer], which blends normalised 0..1 scores).
   static double _score(
     Stats fixed,
     BuildConfig config,
+    OptimizationMode mode,
     List<SubstatType> types,
     List<double> maxPerSlot,
     List<int> counts,
@@ -185,6 +202,15 @@ class BestInSlot {
     for (var i = 0; i < types.length; i++) {
       if (counts[i] > 0) subs[types[i]] = counts[i] * maxPerSlot[i];
     }
-    return Formulas.lifestealPerSecond(fixed + Stats(subs: subs), config);
+    final aggregate = fixed + Stats(subs: subs);
+    switch (mode) {
+      case OptimizationMode.dps:
+        return Formulas.dps(aggregate, config);
+      case OptimizationMode.lifestealPerSecond:
+        return Formulas.lifestealPerSecond(aggregate, config);
+      case OptimizationMode.balanced:
+        return Formulas.dps(aggregate, config) +
+            Formulas.lifestealPerSecond(aggregate, config);
+    }
   }
 }

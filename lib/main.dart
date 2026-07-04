@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'repository/storage.dart';
+import 'screens/best_in_slot_screen.dart';
 import 'screens/dashboard.dart';
 import 'screens/gear_screen.dart';
 import 'screens/mounts_screen.dart';
@@ -68,6 +69,8 @@ class _HomeShellState extends State<HomeShell> {
     _Destination('Mounts', Icons.two_wheeler_outlined, Icons.two_wheeler),
     _Destination('Optimizer', Icons.auto_awesome_outlined, Icons.auto_awesome),
     _Destination('Planner', Icons.trending_up_outlined, Icons.trending_up),
+    _Destination('Best in Slot', Icons.workspace_premium_outlined,
+        Icons.workspace_premium),
     _Destination('Settings', Icons.settings_outlined, Icons.settings),
   ];
 
@@ -82,6 +85,7 @@ class _HomeShellState extends State<HomeShell> {
       const MountsScreen(),
       const OptimizerScreen(),
       const PlannerScreen(),
+      const BestInSlotScreen(),
       const SettingsScreen(),
     ];
     final body = IndexedStack(index: _index, children: screens);

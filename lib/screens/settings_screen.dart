@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../engine/spreadsheet_import.dart';
 import '../models/enums.dart';
 import '../state/app_state.dart';
+import '../utils/file_export.dart';
 import '../widgets/number_field.dart';
 
 /// Edits the profile-level config (the spreadsheet "Skills" block) and the
@@ -297,16 +298,26 @@ class SettingsScreen extends StatelessWidget {
   Future<void> _exportFlow(BuildContext context, AppState state) async {
     final json = const JsonEncoder.withIndent('  ').convert(state.exportAll());
     final bytes = Uint8List.fromList(utf8.encode(json));
+
+    // file_picker's saveFile() throws UnimplementedError on every web
+    // browser (it never got a web implementation), so web downloads the
+    // file directly instead of going through the picker.
+    if (kIsWeb) {
+      await downloadAsFile(fileName: 'forge-master-backup.json', bytes: bytes);
+      if (!context.mounted) return;
+      _snack(context, 'Exported backup.');
+      return;
+    }
+
     final path = await FilePicker.platform.saveFile(
       dialogTitle: 'Save backup',
       fileName: 'forge-master-backup.json',
       bytes: bytes,
     );
     // On Windows/Linux/macOS, file_picker's saveFile() only returns the
-    // chosen path - unlike web and mobile, it never writes `bytes` itself -
-    // so the backup silently never lands on disk unless we write it here.
-    if (!kIsWeb &&
-        path != null &&
+    // chosen path - unlike mobile, it never writes `bytes` itself - so the
+    // backup silently never lands on disk unless we write it here.
+    if (path != null &&
         (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
       await File(path).writeAsBytes(bytes);
     }

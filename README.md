@@ -12,10 +12,10 @@ and finds the best pet + mount loadout for three objectives:
 2. **DPS** — damage per second
 3. **Balanced** — a 50/50 blend of the two, normalised so neither dominates
 
-The Gear tab also has a **best-in-slot substat** calculator: holding your
-pets, mount and gear main stats fixed, it works out the highest Lifesteal/sec
-you could reach if every gear piece's existing substat slots rolled the ideal
-type at its maximum value.
+The **Best in Slot** tab is a separate calculator: holding your gear main
+stats fixed (and, optionally, your equipped pets and mount), it works out the
+highest DPS, Lifesteal/sec, or balanced score you could reach if every gear
+piece's existing substat slots rolled the ideal type at its maximum value.
 
 Material 3, dark by default. Local JSON persistence (no server, no login).
 Works on Flutter Web, desktop and Android from a single codebase.
@@ -73,13 +73,14 @@ To recalibrate after a game patch, edit `lib/engine/formulas.dart` only.
 
 ### Best-in-slot gear substats
 
-The Gear tab's best-in-slot card (`lib/engine/best_in_slot.dart`) answers
-"what's my Lifesteal/sec ceiling if my gear substats were ideal?" It keeps
-pets, mount and every gear piece's main stats fixed, and searches every way
-to fill each gear piece's *existing* substat slots (a piece with one rolled
+The Best in Slot tab (`lib/engine/best_in_slot.dart`) answers "what's my
+ceiling for DPS, Lifesteal/sec, or both, if my gear substats were ideal?" It
+keeps every gear piece's main stats fixed, and optionally your equipped pets
+and mount (toggle them out to see gear alone), then searches every way to
+fill each gear piece's *existing* substat slots (a piece with one rolled
 substat only gets one slot, an unrolled piece gets none) with the type/max
-combination that maximises Lifesteal/sec, never repeating a type on the same
-piece. The per-substat maximum gear roll:
+combination that maximises the chosen objective, never repeating a type on
+the same piece. The per-substat maximum gear roll:
 
 | Substat        | Max roll |
 | -------------- | -------- |
@@ -106,7 +107,8 @@ lib/
   repository/ local JSON storage
   state/      AppState (single source of truth, ChangeNotifier)
   widgets/    reusable cards, number field, substat editor
-  screens/    dashboard, gear, pets, mounts, optimizer, planner, settings, compare
+  screens/    dashboard, gear, pets, mounts, optimizer, planner, best in
+              slot, settings, compare
   theme/      Material 3 theme
   main.dart   app entry + responsive navigation shell
 ```

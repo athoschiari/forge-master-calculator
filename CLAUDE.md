@@ -20,11 +20,11 @@ own `toJson`/`fromJson`/`copyWith`.
 ## Navigation
 
 `lib/main.dart` — there is no `Navigator`/routes. `HomeShell` holds an
-`int _index` and renders all 7 screens (Dashboard, Gear, Pets, Mounts,
-Optimizer, Planner, Settings) into an `IndexedStack`, so each screen's local
-state (search text, in-progress edits) survives switching tabs. Layout is
-responsive: `NavigationRail` at width ≥800, `NavigationBar` (bottom tabs)
-below that.
+`int _index` and renders all 8 screens (Dashboard, Gear, Pets, Mounts,
+Optimizer, Planner, Best in Slot, Settings) into an `IndexedStack`, so each
+screen's local state (search text, in-progress edits) survives switching
+tabs. Layout is responsive: `NavigationRail` at width ≥800, `NavigationBar`
+(bottom tabs) below that.
 
 ## State layer
 
@@ -104,23 +104,28 @@ their background by rarity.
 
 `formulas.dart`/`calculator.dart`/`optimizer.dart` are covered in README's
 "How the numbers work". `best_in_slot.dart` (`BestInSlot.solve`, exposed as
-`AppState.bestInSlotForLifesteal()`) answers a different question from the
-Optimizer: not "which owned pet/mount combo is best" but "what's the
-Lifesteal/sec ceiling if my current gear's substats rolled ideally?" Pets,
-mount and every gear piece's main stats are held fixed at their current
-contribution; only gear substats are re-optimised, and only up to the number
-of slots a piece already has (`piece.substats.length`, 0/1/2 — it never
-invents a slot a piece doesn't have). It searches every way to spread those
-slots across the substat types that actually move
-`Formulas.lifestealPerSecond` (crit chance/damage, lifesteal, double chance,
-damage%, the melee-or-ranged% matching `BuildConfig.weaponType`, attack
-speed — block chance/regen/health/skill damage/cooldown are excluded because
-they never appear in that formula), each slot valued at its type's fixed max
-roll (`SubstatCaps.gearMax`, a gear-only table — pets/mounts aren't
-re-rolled). The search caps how many slots any one type can take at the
-number of gear pieces with a slot at all, since a single piece can carry a
-given type at most once (its two slots, if it has two, are always assigned
-different types, matching the in-game no-duplicate-substat-per-item rule).
+`AppState.bestInSlot()`, presented on the Best in Slot screen) answers a
+different question from the Optimizer: not "which owned pet/mount combo is
+best" but "what's my ceiling for a chosen objective (DPS, Lifesteal/sec, or
+both combined) if my current gear's substats rolled ideally?" Every gear
+piece's main stats are always held fixed at their current contribution;
+pets/mount are held fixed too when included, or left out of the calculation
+entirely when the screen's toggles exclude them. Only gear substats are
+re-optimised, and only up to the number of slots a piece already has
+(`piece.substats.length`, 0/1/2 — it never invents a slot a piece doesn't
+have). It searches every way to spread those slots across the substat types
+that actually move the chosen objective's formula (DPS reads crit
+chance/damage, double chance, damage%, the melee-or-ranged% matching
+`BuildConfig.weaponType`, and attack speed; Lifesteal/sec reads all of those
+plus lifesteal% itself; balanced is the raw `dps + lifestealPerSecond` sum,
+matching `BuildResult.objectiveValue` — block chance/regen/health/skill
+damage/cooldown are excluded because they never move either formula), each
+slot valued at its type's fixed max roll (`SubstatCaps.gearMax`, a gear-only
+table — pets/mounts aren't re-rolled). The search caps how many slots any
+one type can take at the number of gear pieces with a slot at all, since a
+single piece can carry a given type at most once (its two slots, if it has
+two, are always assigned different types, matching the in-game
+no-duplicate-substat-per-item rule).
 
 ## Widgets (`lib/widgets/`)
 
@@ -142,19 +147,20 @@ different types, matching the in-game no-duplicate-substat-per-item rule).
   tints its own `Card`'s background via `AppTheme.rarityTint` keyed off the
   item's rarity color, overriding the themed `color:` per-instance.
 - `BuildSummaryBanner` — "current build at a glance" card, shown atop the
-  Planner, Optimizer and Gear screens (each suggests changes *relative to*
-  the current build, so they stay anchored to it). Takes a `BuildResult` plus
-  the equipped pets/mount and renders shown/calculated Damage and Health,
-  DPS, lifesteal/sec and heal/sec, the equipped pets/mount, and an (i)
-  icon opening a dialog with the full substat breakdown (ordered by the
-  shared `substatDisplayOrder` in `utils/formatting.dart`, also used by the
-  dashboard's aggregated-stats card). Takes an optional `proposed`
-  `BuildResult` — when the caller passes one (Optimizer: the best candidate
-  for the selected mode; Planner: the top-ranked move; Gear: the
-  `BestInSlot` ceiling, see the Engine section) the (i) dialog becomes a
-  current -> proposed comparison, every row color-coded green if the
-  proposed value is higher and red if lower (a plain magnitude comparison,
-  not a per-stat "higher is actually better" judgement).
+  Planner, Optimizer and Best in Slot screens (each suggests changes
+  *relative to* the current build, so they stay anchored to it). Takes a
+  `BuildResult` plus the equipped pets/mount and renders shown/calculated
+  Damage and Health, DPS, lifesteal/sec and heal/sec, the equipped
+  pets/mount, and an (i) icon opening a dialog with the full substat
+  breakdown (ordered by the shared `substatDisplayOrder` in
+  `utils/formatting.dart`, also used by the dashboard's aggregated-stats
+  card). Takes an optional `proposed` `BuildResult` — when the caller passes
+  one (Optimizer: the best candidate for the selected mode; Planner: the
+  top-ranked move; Best in Slot: the `BestInSlot` ceiling for the chosen
+  objective, see the Engine section) the (i) dialog becomes a current ->
+  proposed comparison, every row color-coded green if the proposed value is
+  higher and red if lower (a plain magnitude comparison, not a per-stat
+  "higher is actually better" judgement).
 
 ## Screens (`lib/screens/`)
 
@@ -180,4 +186,15 @@ deliberately. Immutability via `copyWith`, not mutable setters. File names
 `snake_case`, classes `PascalCase`. `///` doc comments precede public
 classes and explain *why* a thing exists (a design decision, a game
 mechanic), not what the code obviously does. No test coverage beyond one
-app-boot smoke test (`test/widget_test.dart`).
+app-boot smoke test (`test/widget_test.dart`) and a web-only regression test
+(`test/web_export_test.dart`, `@TestOn('chrome')`, run via `flutter test
+--platform chrome`).
+
+Platform-specific code (so far, just the Settings export flow) is split
+behind a conditional import rather than an `if (kIsWeb)` runtime branch that
+still references browser-only APIs: `lib/utils/file_export.dart` exports
+`file_export_stub.dart` normally and swaps in `file_export_web.dart` (which
+uses `package:web`) `if (dart.library.html)`. This is the only place in the
+codebase that needs this pattern — everywhere else, a `Platform.isX`/`kIsWeb`
+runtime check is enough because `dart:io` compiles (with a no-op web shim)
+on every target, but `package:web`/`dart:js_interop` only compile for web.

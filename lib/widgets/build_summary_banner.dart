@@ -7,15 +7,15 @@ import '../theme/app_theme.dart';
 import '../utils/formatting.dart';
 
 /// "Current build at a glance" banner shown atop the Planner, Optimizer and
-/// Gear screens, so each stays anchored to what's actually equipped right now
-/// while it suggests changes to it: shown/calculated Damage and Health,
-/// per-second output, and the currently equipped pets/mount. The (i) icon
-/// opens a detail dialog without cluttering the banner itself - just the
+/// Best in Slot screens, so each stays anchored to what's actually equipped
+/// right now while it suggests changes to it: shown/calculated Damage and
+/// Health, per-second output, and the currently equipped pets/mount. The (i)
+/// icon opens a detail dialog without cluttering the banner itself - just the
 /// substat breakdown normally, or a current -> proposed comparison (every
 /// row color-coded green/red for higher/lower) when the caller passes
 /// [proposed] - the screen's suggested alternative build (the Optimizer's
 /// best candidate for the selected mode, the Planner's top-ranked move, the
-/// Gear screen's best-in-slot substat ceiling).
+/// Best in Slot screen's ceiling for the chosen objective).
 class BuildSummaryBanner extends StatelessWidget {
   const BuildSummaryBanner({
     super.key,
