@@ -5,10 +5,11 @@ import '../models/enums.dart';
 import '../state/app_state.dart';
 import '../widgets/build_summary_banner.dart';
 
-/// Answers "what's my ceiling for a chosen objective if my gear substats were
-/// ideal?" Every gear piece's main stats stay exactly as equipped; pets and
-/// mount can be toggled in or out of the calculation. The search itself
-/// lives in `engine/best_in_slot.dart` - this screen just presents it.
+/// Answers "what's my ceiling for a chosen objective if every substat rolled
+/// ideally?" Every item's main stats stay exactly as equipped; pets and mount
+/// can be toggled in or out - when included, their substat slots join gear's
+/// in the search, not just their current stats. The search itself lives in
+/// `engine/best_in_slot.dart` - this screen just presents it.
 class BestInSlotScreen extends StatefulWidget {
   const BestInSlotScreen({super.key});
 
@@ -37,9 +38,9 @@ class _BestInSlotScreenState extends State<BestInSlotScreen> {
         Text('Best in Slot', style: theme.textTheme.headlineSmall),
         const SizedBox(height: 4),
         Text(
-          "Highest ${_mode.shortLabel} achievable if every gear piece's "
-          'existing substat slots rolled the ideal type at its maximum '
-          'value. Main stats stay as they are now.',
+          "Highest ${_mode.shortLabel} achievable if every item's existing "
+          'substat slots rolled the ideal type at its maximum value. Main '
+          'stats stay as they are now.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -85,16 +86,18 @@ class _BestInSlotScreenState extends State<BestInSlotScreen> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Include equipped pets'),
-                  subtitle:
-                      const Text("Count your pets' stats toward the result"),
+                  subtitle: const Text(
+                      "Also roll your pets' substat slots ideally, not just "
+                      "their current stats"),
                   value: _includePets,
                   onChanged: (v) => setState(() => _includePets = v),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Include equipped mount'),
-                  subtitle:
-                      const Text("Count your mount's stats toward the result"),
+                  subtitle: const Text(
+                      "Also roll your mount's substat slots ideally, not "
+                      "just its current stats"),
                   value: _includeMount,
                   onChanged: (v) => setState(() => _includeMount = v),
                 ),
@@ -116,8 +119,8 @@ class _BestInSlotScreenState extends State<BestInSlotScreen> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                "None of your gear has any substats rolled yet, so there's "
-                'nothing to optimise.',
+                "Nothing in this calculation has any substats rolled yet, "
+                "so there's nothing to optimise.",
                 style: theme.textTheme.bodyMedium,
               ),
             ),

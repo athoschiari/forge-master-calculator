@@ -7,14 +7,14 @@ import '../models/stats.dart';
 import 'calculator.dart';
 import 'formulas.dart';
 
-/// Highest value a single gear substat roll can reach, keyed by type. This is
-/// a gear-only table (pets and mounts are not re-rolled by [BestInSlot], only
-/// read as fixed contributors) taken from the game's substat pool, not
-/// derivable from anything already in the model layer.
+/// Highest value a single substat roll can reach, keyed by type - the same
+/// pool for gear, pets and mounts alike (there's no separate max-roll table
+/// per item kind in-game). [BestInSlot] uses this to value every substat slot
+/// it optimises, whichever item it belongs to.
 class SubstatCaps {
   const SubstatCaps._();
 
-  static const Map<SubstatType, double> gearMax = {
+  static const Map<SubstatType, double> maxRoll = {
     SubstatType.critChance: 12,
     SubstatType.critDamage: 80,
     SubstatType.blockChance: 5,
@@ -31,10 +31,11 @@ class SubstatCaps {
   };
 }
 
-/// Result of [BestInSlot.solve]. [totalSlots] is how many gear substat slots
-/// fed the search (0 means no gear has any substat rolled, so [build] is just
-/// the unmodified fixed aggregate) - callers use it to tell "nothing to
-/// optimise" apart from a genuine best-in-slot [build].
+/// Result of [BestInSlot.solve]. [totalSlots] is how many substat slots (across
+/// gear and, if included, pets/mount) fed the search (0 means nothing
+/// included has any substat rolled, so [build] is just the unmodified fixed
+/// aggregate) - callers use it to tell "nothing to optimise" apart from a
+/// genuine best-in-slot [build].
 class BestInSlotResult {
   final BuildResult build;
   final int totalSlots;
@@ -42,16 +43,17 @@ class BestInSlotResult {
   const BestInSlotResult({required this.build, required this.totalSlots});
 }
 
-/// Answers "if every gear piece's substats rolled ideally, what's my ceiling
-/// for a chosen objective (DPS, Lifesteal/sec, or both combined)?" Every gear
-/// piece's main stats (Damage/Health) are always held fixed at their current
-/// build contribution; pets and mount are fixed too, but the caller may pass
-/// an empty list / null to exclude them from the calculation entirely. Only
-/// gear *substats* are re-optimised, and only up to the number of substat
-/// slots a piece already has (a piece with one rolled substat is searched
-/// with one slot, not two; an empty piece contributes none). A single piece's
-/// two slots are never assigned the same type, matching the game's
-/// no-duplicate-substat-per-item rule.
+/// Answers "if every substat slot rolled ideally, what's my ceiling for a
+/// chosen objective (DPS, Lifesteal/sec, or both combined)?" Every equipped
+/// item's main stats (Damage/Health) are always held fixed at their current
+/// contribution; the caller passes an empty pet list / null mount to exclude
+/// them from the calculation entirely. Whichever items *are* included - gear
+/// always, pets/mount when the caller includes them - have their substats
+/// re-optimised together as one pool, each contributing only as many slots as
+/// it already has rolled (an item with one substat is searched with one slot,
+/// not two; an empty item contributes none). A single item's two slots are
+/// never assigned the same type, matching the game's no-duplicate-substat-
+/// per-item rule.
 class BestInSlot {
   const BestInSlot._();
 
@@ -89,26 +91,29 @@ class BestInSlot {
     required OptimizationMode mode,
   }) {
     var fixed = Stats.zero;
+    final capacities = <int>[];
+
+    // One item (gear piece, pet or mount) contributes its main stats always,
+    // and as many substat slots as it already has rolled (0/1/2) to the
+    // shared pool the search below fills.
+    void addItem(double mainDamage, double mainHealth, List<Substat> substats) {
+      fixed = fixed +
+          Stats.fromParts(flatDamage: mainDamage, flatHealth: mainHealth);
+      final slots = substats.length.clamp(0, 2);
+      if (slots > 0) capacities.add(slots);
+    }
+
     for (final piece in gear.values) {
       if (piece != null) {
-        fixed = fixed +
-            Stats.fromParts(
-              flatDamage: piece.mainDamage,
-              flatHealth: piece.mainHealth,
-            );
+        addItem(piece.mainDamage, piece.mainHealth, piece.substats);
       }
     }
     for (final pet in pets) {
-      fixed = fixed + pet.toStats();
+      addItem(pet.mainDamage, pet.mainHealth, pet.substats);
     }
-    if (mount != null) fixed = fixed + mount.toStats();
-
-    // One gear piece = one "item" that can carry up to its current substat
-    // count, each slot a different type.
-    final capacities = [
-      for (final piece in gear.values)
-        if (piece != null) piece.substats.length.clamp(0, 2),
-    ].where((c) => c > 0).toList();
+    if (mount != null) {
+      addItem(mount.mainDamage, mount.mainHealth, mount.substats);
+    }
 
     final itemCount = capacities.length;
     final totalSlots = capacities.fold(0, (sum, c) => sum + c);
@@ -121,15 +126,15 @@ class BestInSlot {
     }
 
     final types = _relevantTypes(config.weaponType, mode);
-    final maxPerSlot = [for (final t in types) SubstatCaps.gearMax[t] ?? 0];
+    final maxPerSlot = [for (final t in types) SubstatCaps.maxRoll[t] ?? 0];
 
     var bestScore = -1.0;
     var bestCounts = List<int>.filled(types.length, 0);
     final counts = List<int>.filled(types.length, 0);
 
     // Every composition of totalSlots across `types`, capped at itemCount
-    // per type (one gear piece can carry a given type at most once, whether
-    // it has one or two slots) so the result stays realisable per-item.
+    // per type (one item can carry a given type at most once, whether it has
+    // one or two slots) so the result stays realisable per-item.
     void search(int index, int remaining) {
       final last = index == types.length - 1;
       final cap = remaining < itemCount ? remaining : itemCount;

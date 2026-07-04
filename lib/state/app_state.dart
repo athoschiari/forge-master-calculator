@@ -239,9 +239,10 @@ class AppState extends ChangeNotifier {
         petSlots: _petSlots,
       );
 
-  /// Ceiling for [mode] if every current gear piece's existing substat slots
-  /// rolled ideally, holding main stats fixed. Pets/mount are held fixed too
-  /// when included, or left out of the calculation entirely when not.
+  /// Ceiling for [mode] if every included item's existing substat slots
+  /// rolled ideally, holding main stats fixed. Gear is always included;
+  /// pets/mount join the same substat pool when included, or are left out of
+  /// the calculation entirely when not.
   BestInSlotResult bestInSlot({
     required OptimizationMode mode,
     bool includePets = true,

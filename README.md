@@ -12,10 +12,12 @@ and finds the best pet + mount loadout for three objectives:
 2. **DPS** — damage per second
 3. **Balanced** — a 50/50 blend of the two, normalised so neither dominates
 
-The **Best in Slot** tab is a separate calculator: holding your gear main
-stats fixed (and, optionally, your equipped pets and mount), it works out the
-highest DPS, Lifesteal/sec, or balanced score you could reach if every gear
-piece's existing substat slots rolled the ideal type at its maximum value.
+The **Best in Slot** tab is a separate calculator: holding every item's main
+stats fixed, it works out the highest DPS, Lifesteal/sec, or balanced score
+you could reach if every existing substat slot rolled the ideal type at its
+maximum value. Gear is always included; toggle your equipped pets and mount
+in too to have their substat slots optimised alongside gear's, not just
+counted as-is.
 
 Material 3, dark by default. Local JSON persistence (no server, no login).
 Works on Flutter Web, desktop and Android from a single codebase.
@@ -71,16 +73,17 @@ Key points from the sheet:
 
 To recalibrate after a game patch, edit `lib/engine/formulas.dart` only.
 
-### Best-in-slot gear substats
+### Best-in-slot substats
 
 The Best in Slot tab (`lib/engine/best_in_slot.dart`) answers "what's my
-ceiling for DPS, Lifesteal/sec, or both, if my gear substats were ideal?" It
-keeps every gear piece's main stats fixed, and optionally your equipped pets
-and mount (toggle them out to see gear alone), then searches every way to
-fill each gear piece's *existing* substat slots (a piece with one rolled
-substat only gets one slot, an unrolled piece gets none) with the type/max
-combination that maximises the chosen objective, never repeating a type on
-the same piece. The per-substat maximum gear roll:
+ceiling for DPS, Lifesteal/sec, or both, if every substat were ideal?" It
+keeps every item's main stats fixed, then searches every way to fill each
+included item's *existing* substat slots (an item with one rolled substat
+only gets one slot, an unrolled item gets none) with the type/max combination
+that maximises the chosen objective, never repeating a type on the same item.
+Gear is always included; toggling equipped pets/mount in adds their substat
+slots to the same pool instead of just counting their current stats. The
+per-substat maximum roll (same table for gear, pets and mounts):
 
 | Substat        | Max roll |
 | -------------- | -------- |
