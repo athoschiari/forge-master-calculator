@@ -117,6 +117,8 @@ class BuildResult {
         return dps;
       case OptimizationMode.lifestealPerSecond:
         return lifestealPerSecond;
+      case OptimizationMode.healPerSecond:
+        return healPerSecond;
       case OptimizationMode.balanced:
         return dps + lifestealPerSecond;
     }

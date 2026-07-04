@@ -106,27 +106,40 @@ their background by rarity.
 "How the numbers work". `best_in_slot.dart` (`BestInSlot.solve`, exposed as
 `AppState.bestInSlot()`, presented on the Best in Slot screen) answers a
 different question from the Optimizer: not "which owned pet/mount combo is
-best" but "what's my ceiling for a chosen objective (DPS, Lifesteal/sec, or
-both combined) if every substat rolled ideally?" Every included item's main
-stats are always held fixed at their current contribution; gear is always
-included, pets/mount join the same substat pool when the screen's toggles
-include them, or are left out of the calculation entirely when not. Whichever
-items are in, their substats are re-optimised together as one pool, each item
-contributing only as many slots as it already has rolled
+best" but "what's my ceiling for a chosen objective (DPS, Lifesteal/sec,
+Heal/sec, or Balanced) if every substat rolled ideally?" Every included
+item's main stats are always held fixed at their current contribution; gear
+is always included, pets/mount join the same substat pool when the screen's
+toggles include them, or are left out of the calculation entirely when not.
+Whichever items are in, their substats are re-optimised together as one
+pool, each item contributing only as many slots as it already has rolled
 (`item.substats.length`, 0/1/2 — it never invents a slot an item doesn't
 have). It searches every way to spread those slots across the substat types
 that actually move the chosen objective's formula (DPS reads crit
 chance/damage, double chance, damage%, the melee-or-ranged% matching
 `BuildConfig.weaponType`, and attack speed; Lifesteal/sec reads all of those
-plus lifesteal% itself; balanced is the raw `dps + lifestealPerSecond` sum,
-matching `BuildResult.objectiveValue` — block chance/regen/health/skill
-damage/cooldown are excluded because they never move either formula), each
-slot valued at its type's fixed max roll (`SubstatCaps.maxRoll` — the same
-pool for gear, pets and mounts, there's no separate table per item kind). The
-search caps how many slots any one type can take at the number of included
-items with a slot at all, since a single item can carry a given type at most
-once (its two slots, if it has two, are always assigned different types,
-matching the in-game no-duplicate-substat-per-item rule).
+plus lifesteal% itself; Balanced is the raw `dps + lifestealPerSecond` sum,
+matching `BuildResult.objectiveValue`; Heal/sec is `lifestealPerSecond +
+regenPerSecond`, so it also reads Health% and Regen% — Health% only matters
+here, since `Formulas.totalHealth` (which it scales) otherwise feeds nothing
+but regen. Block chance and skill damage/cooldown never move any of these
+formulas, so they're excluded entirely), each slot valued at its type's fixed
+max roll (`SubstatCaps.maxRoll` — the same pool for gear, pets and mounts,
+there's no separate table per item kind). The search caps how many slots any
+one type can take at the number of included items with a slot at all, since a
+single item can carry a given type at most once (its two slots, if it has
+two, are always assigned different types, matching the in-game
+no-duplicate-substat-per-item rule).
+
+Heal/sec is solved differently from the other three: the lifesteal-side
+substats (crit/damage/attackSpeed/lifesteal) and the regen-side substats
+(Health%/Regen%) never appear in the same formula, so `_solveHealPerSecond`
+searches each side independently (`_bestByExactSlots`, which — unlike the
+single-target search the other three modes use — returns the best score for
+*every* slot count from 0 up, not just the total) and picks whichever split
+of the shared slot budget scores highest combined. A single 9-type brute
+force over the same budget was measured at several seconds; this is the same
+search cost as the other modes, just run twice.
 
 ## Widgets (`lib/widgets/`)
 

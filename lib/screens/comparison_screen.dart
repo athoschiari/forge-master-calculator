@@ -370,6 +370,8 @@ class _Worthiness extends StatelessWidget {
         return c.build.dps;
       case OptimizationMode.lifestealPerSecond:
         return c.build.lifestealPerSecond;
+      case OptimizationMode.healPerSecond:
+        return c.build.healPerSecond;
       case OptimizationMode.balanced:
         // An absolute, cross-run-comparable blend (the optimizer's own balanced
         // score is normalised per run, so it can't be compared across runs).

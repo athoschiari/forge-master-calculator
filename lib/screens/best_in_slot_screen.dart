@@ -67,6 +67,11 @@ class _BestInSlotScreenState extends State<BestInSlotScreen> {
                       icon: Icon(Icons.bolt),
                     ),
                     ButtonSegment(
+                      value: OptimizationMode.healPerSecond,
+                      label: Text('Heal/sec'),
+                      icon: Icon(Icons.healing),
+                    ),
+                    ButtonSegment(
                       value: OptimizationMode.balanced,
                       label: Text('Balanced'),
                       icon: Icon(Icons.balance),

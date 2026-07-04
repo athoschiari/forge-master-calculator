@@ -24,6 +24,7 @@ class BuildCandidate {
 
   double get dps => build.dps;
   double get lifestealPerSecond => build.lifestealPerSecond;
+  double get healPerSecond => build.healPerSecond;
 
   double score(OptimizationMode mode) {
     switch (mode) {
@@ -31,6 +32,8 @@ class BuildCandidate {
         return dps;
       case OptimizationMode.lifestealPerSecond:
         return lifestealPerSecond;
+      case OptimizationMode.healPerSecond:
+        return healPerSecond;
       case OptimizationMode.balanced:
         return balancedScore;
     }

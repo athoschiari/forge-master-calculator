@@ -104,10 +104,11 @@ enum SubstatType {
   }
 }
 
-/// The three optimization objectives the optimizer ranks combinations against.
+/// The four optimization objectives the optimizer ranks combinations against.
 enum OptimizationMode {
   dps,
   lifestealPerSecond,
+  healPerSecond,
   balanced;
 
   String get label {
@@ -116,6 +117,8 @@ enum OptimizationMode {
         return 'Best DPS';
       case OptimizationMode.lifestealPerSecond:
         return 'Best Lifesteal/sec';
+      case OptimizationMode.healPerSecond:
+        return 'Best Heal/sec';
       case OptimizationMode.balanced:
         return 'Best Balanced';
     }
@@ -127,6 +130,8 @@ enum OptimizationMode {
         return 'DPS';
       case OptimizationMode.lifestealPerSecond:
         return 'Lifesteal/sec';
+      case OptimizationMode.healPerSecond:
+        return 'Heal/sec';
       case OptimizationMode.balanced:
         return 'Balanced';
     }
@@ -138,6 +143,10 @@ enum OptimizationMode {
         return 'Maximises damage per second.';
       case OptimizationMode.lifestealPerSecond:
         return 'Maximises health recovered per second (lifesteal healing).';
+      case OptimizationMode.healPerSecond:
+        return 'Maximises total health recovered per second from lifesteal '
+            'and passive regen combined - use this to compare a regen build '
+            'against a lifesteal build on equal footing.';
       case OptimizationMode.balanced:
         return 'Balances DPS and lifesteal/sec 50/50, normalised across every '
             'combination so neither metric dominates by raw scale.';

@@ -27,6 +27,7 @@ class _OptimizerScreenState extends State<OptimizerScreen> {
       case OptimizationMode.dps:
         return MetricColors.dps;
       case OptimizationMode.lifestealPerSecond:
+      case OptimizationMode.healPerSecond:
         return MetricColors.lifesteal;
       case OptimizationMode.balanced:
         return MetricColors.balanced;
@@ -70,6 +71,11 @@ class _OptimizerScreenState extends State<OptimizerScreen> {
               value: OptimizationMode.dps,
               label: Text('DPS'),
               icon: Icon(Icons.bolt),
+            ),
+            ButtonSegment(
+              value: OptimizationMode.healPerSecond,
+              label: Text('Heal/sec'),
+              icon: Icon(Icons.healing),
             ),
             ButtonSegment(
               value: OptimizationMode.balanced,
@@ -231,7 +237,7 @@ class _BestCard extends StatelessWidget {
                 _Metric(
                   label: 'Heal/sec',
                   value: formatCompact(build.healPerSecond),
-                  highlight: false,
+                  highlight: mode == OptimizationMode.healPerSecond,
                   accent: MetricColors.lifesteal,
                 ),
                 _Metric(
@@ -359,11 +365,14 @@ class _RankRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primary = mode == OptimizationMode.lifestealPerSecond
-        ? formatCompact(candidate.lifestealPerSecond)
-        : mode == OptimizationMode.dps
-            ? formatCompact(candidate.dps)
-            : '${(candidate.balancedScore * 100).toStringAsFixed(0)}%';
+    final primary = switch (mode) {
+      OptimizationMode.lifestealPerSecond =>
+        formatCompact(candidate.lifestealPerSecond),
+      OptimizationMode.dps => formatCompact(candidate.dps),
+      OptimizationMode.healPerSecond => formatCompact(candidate.healPerSecond),
+      OptimizationMode.balanced =>
+        '${(candidate.balancedScore * 100).toStringAsFixed(0)}%',
+    };
     final pets = candidate.pets.isEmpty
         ? 'No pets'
         : candidate.pets.map(describePet).join('   |   ');
@@ -390,7 +399,8 @@ class _RankRow extends StatelessWidget {
                 Text('$pets  -  $mount', style: theme.textTheme.bodyMedium),
                 Text(
                   'DPS ${formatCompact(candidate.dps)}  -  '
-                  'LS/s ${formatCompact(candidate.lifestealPerSecond)}',
+                  'LS/s ${formatCompact(candidate.lifestealPerSecond)}  -  '
+                  'Heal/s ${formatCompact(candidate.healPerSecond)}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),

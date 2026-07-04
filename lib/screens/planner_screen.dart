@@ -32,16 +32,7 @@ class PlannerScreen extends StatefulWidget {
 class _PlannerScreenState extends State<PlannerScreen> {
   OptimizationMode _metric = OptimizationMode.dps;
 
-  double _value(BuildResult r) {
-    switch (_metric) {
-      case OptimizationMode.dps:
-        return r.dps;
-      case OptimizationMode.lifestealPerSecond:
-        return r.lifestealPerSecond;
-      case OptimizationMode.balanced:
-        return r.dps + r.lifestealPerSecond;
-    }
-  }
+  double _value(BuildResult r) => r.objectiveValue(_metric);
 
   List<_Move> _moves(AppState state, BuildResult current) {
     final moves = <_Move>[];
@@ -135,6 +126,9 @@ class _PlannerScreenState extends State<PlannerScreen> {
                 value: OptimizationMode.lifestealPerSecond,
                 label: Text('Lifesteal/sec')),
             ButtonSegment(
+                value: OptimizationMode.healPerSecond,
+                label: Text('Heal/sec')),
+            ButtonSegment(
                 value: OptimizationMode.balanced, label: Text('Both')),
           ],
           selected: {_metric},
@@ -146,7 +140,8 @@ class _PlannerScreenState extends State<PlannerScreen> {
             title: const Text('Current'),
             subtitle: Text(
               'DPS ${formatCompact(current.dps)}  -  '
-              'Lifesteal/sec ${formatCompact(current.lifestealPerSecond)}',
+              'Lifesteal/sec ${formatCompact(current.lifestealPerSecond)}  -  '
+              'Heal/sec ${formatCompact(current.healPerSecond)}',
             ),
           ),
         ),
@@ -192,7 +187,8 @@ class _MoveTile extends StatelessWidget {
         title: Text(move.label),
         subtitle: Text(
           'DPS ${formatCompact(move.result.dps)}  -  '
-          'Lifesteal/sec ${formatCompact(move.result.lifestealPerSecond)}',
+          'Lifesteal/sec ${formatCompact(move.result.lifestealPerSecond)}  -  '
+          'Heal/sec ${formatCompact(move.result.healPerSecond)}',
           style: theme.textTheme.bodySmall,
         ),
         trailing: Text(
