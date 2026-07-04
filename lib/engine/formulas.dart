@@ -70,10 +70,14 @@ class Formulas {
   ///
   /// base = (totalDamage / interval) x (1 + doubleChance%)
   /// dps  = base x [(1 - crit) + crit x (baseCrit + critDamage)%]
+  ///
+  /// doubleChance is clamped to 100 (can't proc more than one extra hit per
+  /// attack), same as critChance.
   static double dps(Stats aggregate, BuildConfig config) {
     final td = totalDamage(aggregate, config);
     final interval = attackInterval(aggregate.sub(SubstatType.attackSpeed));
-    final doubleChance = aggregate.sub(SubstatType.doubleChance);
+    final doubleChance =
+        math.min(100.0, aggregate.sub(SubstatType.doubleChance));
     final critFraction =
         math.min(100.0, aggregate.sub(SubstatType.critChance)) / 100;
     final critMultiplier =
@@ -87,7 +91,8 @@ class Formulas {
   /// (Denominator of Regenlifestealdps!G24)
   static double attacksPerSecond(Stats aggregate) {
     final interval = attackInterval(aggregate.sub(SubstatType.attackSpeed));
-    final doubleChance = aggregate.sub(SubstatType.doubleChance);
+    final doubleChance =
+        math.min(100.0, aggregate.sub(SubstatType.doubleChance));
     return (1 + doubleChance / 100) / interval;
   }
 
