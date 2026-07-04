@@ -1,7 +1,9 @@
 # Forge Master Optimizer
 
 A Flutter app that replaces the "Forge master master calculator" spreadsheet,
-originally created by **Thermo**. [`docs/base spreadsheet.xlsx`](docs/base%20spreadsheet.xlsx)
+originally created by **Thermo**
+([original version](https://docs.google.com/spreadsheets/d/17p4KrKNQmQXZiljKeI_qaHkB86WGAeRQjhxNKius7Hw/edit?usp=drivesdk)).
+[`docs/base spreadsheet.xlsx`](docs/base%20spreadsheet.xlsx)
 is not that original file, but a modified version with the core calculation
 logic that this app is built on, kept here for reference.
 

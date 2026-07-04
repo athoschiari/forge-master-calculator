@@ -12,6 +12,7 @@ import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatting.dart';
 import '../widgets/number_field.dart';
+import '../widgets/substat_chips.dart';
 import '../widgets/substat_editor.dart';
 
 /// How long to wait after the last keystroke before re-running the optimizer
@@ -124,6 +125,8 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _CurrentReference(piece: current),
+          const SizedBox(height: 12),
           _CandidateEditor(
             candidate: _candidate,
             onChanged: (p) {
@@ -169,6 +172,71 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
           const SizedBox(height: 20),
           _Worthiness(currentOut: _currentOut, candidateOut: _candidateOut),
         ],
+      ),
+    );
+  }
+}
+
+/// Read-only summary of the piece currently in this slot, shown above the
+/// candidate editor so its stats and substats are visible for reference
+/// without having to leave the screen to check the Gear tab.
+class _CurrentReference extends StatelessWidget {
+  const _CurrentReference({required this.piece});
+
+  final GearPiece piece;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasContent = piece.mainDamage > 0 ||
+        piece.mainHealth > 0 ||
+        piece.substats.isNotEmpty;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text('Current ${piece.slot.label}',
+                      style: theme.textTheme.titleMedium),
+                ),
+                Text(
+                  piece.rarity.label,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (hasContent) ...[
+              Row(
+                children: [
+                  Text(
+                    'Main Damage ${formatCompact(piece.mainDamage)}',
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                  const SizedBox(width: 20),
+                  Text(
+                    'Main Health ${formatCompact(piece.mainHealth)}',
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              SubstatChips(substats: piece.substats),
+            ] else
+              Text(
+                'Empty - nothing equipped in this slot.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
