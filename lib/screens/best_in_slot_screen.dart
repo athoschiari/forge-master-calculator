@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../models/enums.dart';
 import '../state/app_state.dart';
-import '../utils/formatting.dart';
 import '../widgets/build_summary_banner.dart';
 
 /// Answers "what's my ceiling for a chosen objective if my gear substats were
@@ -44,13 +43,6 @@ class _BestInSlotScreenState extends State<BestInSlotScreen> {
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
-        ),
-        const SizedBox(height: 16),
-        BuildSummaryBanner(
-          result: state.currentBuild,
-          pets: state.equippedPets,
-          mount: state.equippedMount,
-          proposed: result.totalSlots == 0 ? null : result.build,
         ),
         const SizedBox(height: 16),
         Card(
@@ -111,7 +103,15 @@ class _BestInSlotScreenState extends State<BestInSlotScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        if (result.totalSlots == 0)
+        BuildSummaryBanner(
+          result: state.currentBuild,
+          pets: state.equippedPets,
+          mount: state.equippedMount,
+          proposed: result.totalSlots == 0 ? null : result.build,
+          inlineComparison: true,
+        ),
+        if (result.totalSlots == 0) ...[
+          const SizedBox(height: 16),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -121,41 +121,8 @@ class _BestInSlotScreenState extends State<BestInSlotScreen> {
                 style: theme.textTheme.bodyMedium,
               ),
             ),
-          )
-        else
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Ideal gear substat spread',
-                      style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${result.totalSlots} substat slot(s) across your current gear.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final a in result.allocations)
-                        Chip(
-                          label: Text(
-                            '${a.type.label} x${a.count} '
-                            '(${formatStatValue(a.type, a.totalValue)})',
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ),
+        ],
       ],
     );
   }

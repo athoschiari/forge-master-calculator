@@ -31,29 +31,15 @@ class SubstatCaps {
   };
 }
 
-/// One substat type at its max gear roll, and how many gear slots the
-/// best-in-slot search assigned to it.
-class BisAllocation {
-  final SubstatType type;
-  final int count;
-
-  const BisAllocation({required this.type, required this.count});
-
-  double get totalValue => count * (SubstatCaps.gearMax[type] ?? 0);
-}
-
-/// Result of [BestInSlot.solve]: the resulting build plus the gear-substat
-/// spread that achieves it.
+/// Result of [BestInSlot.solve]. [totalSlots] is how many gear substat slots
+/// fed the search (0 means no gear has any substat rolled, so [build] is just
+/// the unmodified fixed aggregate) - callers use it to tell "nothing to
+/// optimise" apart from a genuine best-in-slot [build].
 class BestInSlotResult {
   final BuildResult build;
-  final List<BisAllocation> allocations;
   final int totalSlots;
 
-  const BestInSlotResult({
-    required this.build,
-    required this.allocations,
-    required this.totalSlots,
-  });
+  const BestInSlotResult({required this.build, required this.totalSlots});
 }
 
 /// Answers "if every gear piece's substats rolled ideally, what's my ceiling
@@ -130,7 +116,6 @@ class BestInSlot {
     if (totalSlots == 0) {
       return BestInSlotResult(
         build: Calculator.fromAggregate(fixed, config),
-        allocations: const [],
         totalSlots: 0,
       );
     }
@@ -174,16 +159,7 @@ class BestInSlot {
     }
     final build = Calculator.fromAggregate(fixed + Stats(subs: subs), config);
 
-    final allocations = [
-      for (var i = 0; i < types.length; i++)
-        if (bestCounts[i] > 0) BisAllocation(type: types[i], count: bestCounts[i]),
-    ]..sort((a, b) => b.totalValue.compareTo(a.totalValue));
-
-    return BestInSlotResult(
-      build: build,
-      allocations: allocations,
-      totalSlots: totalSlots,
-    );
+    return BestInSlotResult(build: build, totalSlots: totalSlots);
   }
 
   /// Same objective definition as [BuildResult.objectiveValue]: balanced is

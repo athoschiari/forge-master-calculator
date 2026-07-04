@@ -150,17 +150,21 @@ no-duplicate-substat-per-item rule).
   Planner, Optimizer and Best in Slot screens (each suggests changes
   *relative to* the current build, so they stay anchored to it). Takes a
   `BuildResult` plus the equipped pets/mount and renders shown/calculated
-  Damage and Health, DPS, lifesteal/sec and heal/sec, the equipped
-  pets/mount, and an (i) icon opening a dialog with the full substat
-  breakdown (ordered by the shared `substatDisplayOrder` in
+  Damage and Health, DPS, lifesteal/sec and heal/sec, and the equipped
+  pets/mount. Takes an optional `proposed` `BuildResult` — when the caller
+  passes one (Optimizer: the best candidate for the selected mode; Planner:
+  the top-ranked move; Best in Slot: the `BestInSlot` ceiling for the chosen
+  objective, see the Engine section) a current -> proposed comparison becomes
+  available: every shown/calculated/per-second stat plus every non-zero
+  substat (ordered by the shared `substatDisplayOrder` in
   `utils/formatting.dart`, also used by the dashboard's aggregated-stats
-  card). Takes an optional `proposed` `BuildResult` — when the caller passes
-  one (Optimizer: the best candidate for the selected mode; Planner: the
-  top-ranked move; Best in Slot: the `BestInSlot` ceiling for the chosen
-  objective, see the Engine section) the (i) dialog becomes a current ->
-  proposed comparison, every row color-coded green if the proposed value is
-  higher and red if lower (a plain magnitude comparison, not a per-stat
-  "higher is actually better" judgement).
+  card), each row color-coded green if the proposed value is higher and red
+  if lower (a plain magnitude comparison, not a per-stat "higher is actually
+  better" judgement). By default that comparison sits behind an (i) icon so
+  it doesn't crowd the banner (Optimizer, Planner); pass `inlineComparison:
+  true` to render it directly in the card instead, with no (i) icon — Best in
+  Slot does this because the comparison *is* the screen's main content, not a
+  detail worth hiding behind a tap.
 
 ## Screens (`lib/screens/`)
 

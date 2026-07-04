@@ -9,13 +9,15 @@ import '../utils/formatting.dart';
 /// "Current build at a glance" banner shown atop the Planner, Optimizer and
 /// Best in Slot screens, so each stays anchored to what's actually equipped
 /// right now while it suggests changes to it: shown/calculated Damage and
-/// Health, per-second output, and the currently equipped pets/mount. The (i)
-/// icon opens a detail dialog without cluttering the banner itself - just the
-/// substat breakdown normally, or a current -> proposed comparison (every
-/// row color-coded green/red for higher/lower) when the caller passes
-/// [proposed] - the screen's suggested alternative build (the Optimizer's
-/// best candidate for the selected mode, the Planner's top-ranked move, the
-/// Best in Slot screen's ceiling for the chosen objective).
+/// Health, per-second output, and the currently equipped pets/mount. When the
+/// caller passes [proposed] - the screen's suggested alternative build (the
+/// Optimizer's best candidate for the selected mode, the Planner's top-ranked
+/// move, the Best in Slot screen's ceiling for the chosen objective) - a
+/// current -> proposed comparison becomes available, every row color-coded
+/// green/red for higher/lower. By default that comparison sits behind an (i)
+/// icon so it doesn't clutter the banner; pass [inlineComparison] true (Best
+/// in Slot: the comparison *is* the screen's main content, not a detail worth
+/// hiding) to render it directly in the card instead, with no (i) icon.
 class BuildSummaryBanner extends StatelessWidget {
   const BuildSummaryBanner({
     super.key,
@@ -23,12 +25,14 @@ class BuildSummaryBanner extends StatelessWidget {
     required this.pets,
     required this.mount,
     this.proposed,
+    this.inlineComparison = false,
   });
 
   final BuildResult result;
   final List<Pet> pets;
   final Mount? mount;
   final BuildResult? proposed;
+  final bool inlineComparison;
 
   @override
   Widget build(BuildContext context) {
@@ -43,12 +47,13 @@ class BuildSummaryBanner extends StatelessWidget {
               children: [
                 Text('Current build', style: theme.textTheme.titleMedium),
                 const Spacer(),
-                IconButton(
-                  tooltip: 'Substat breakdown',
-                  icon: const Icon(Icons.info_outline, size: 20),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _showSubstats(context),
-                ),
+                if (!inlineComparison)
+                  IconButton(
+                    tooltip: 'Substat breakdown',
+                    icon: const Icon(Icons.info_outline, size: 20),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _showSubstats(context),
+                  ),
               ],
             ),
             const SizedBox(height: 4),
@@ -113,52 +118,63 @@ class BuildSummaryBanner extends StatelessWidget {
                       health: mount!.mainHealth,
                       rarity: mount!.rarity),
             ),
+            if (inlineComparison) ...[
+              const Divider(height: 24),
+              Text(
+                proposed == null ? 'Substats' : 'Current -> Proposed',
+                style: theme.textTheme.titleSmall,
+              ),
+              const SizedBox(height: 4),
+              ..._comparisonRows(context),
+            ],
           ],
         ),
       ),
     );
   }
 
-  void _showSubstats(BuildContext context) {
+  // Higher is green, lower is red - a plain magnitude comparison, not a
+  // per-stat "is higher actually better" judgement (e.g. skill cooldown).
+  Color _deltaColor(BuildContext context, double current, double next) {
     final theme = Theme.of(context);
-    final p = proposed;
+    if (next > current) return MetricColors.lifesteal;
+    if (next < current) return theme.colorScheme.error;
+    return theme.colorScheme.onSurfaceVariant;
+  }
 
-    // Higher is green, lower is red - a plain magnitude comparison, not a
-    // per-stat "is higher actually better" judgement (e.g. skill cooldown).
-    Color deltaColor(double current, double next) {
-      if (next > current) return MetricColors.lifesteal;
-      if (next < current) return theme.colorScheme.error;
-      return theme.colorScheme.onSurfaceVariant;
-    }
-
-    Widget row(String label, double current, double? next,
-        String Function(double) fmt) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            Expanded(child: Text(label)),
-            Text(fmt(current),
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            if (next != null) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Icon(Icons.arrow_forward,
-                    size: 14, color: theme.colorScheme.onSurfaceVariant),
+  Widget _row(BuildContext context, String label, double current,
+      double? next, String Function(double) fmt) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          Text(fmt(current), style: const TextStyle(fontWeight: FontWeight.w600)),
+          if (next != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Icon(Icons.arrow_forward,
+                  size: 14, color: theme.colorScheme.onSurfaceVariant),
+            ),
+            Text(
+              fmt(next),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: _deltaColor(context, current, next),
               ),
-              Text(
-                fmt(next),
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: deltaColor(current, next),
-                ),
-              ),
-            ],
+            ),
           ],
-        ),
-      );
-    }
+        ],
+      ),
+    );
+  }
 
+  /// Shown/calculated/per-second summary rows plus every non-zero substat,
+  /// each current -> proposed (or just current, with no [proposed] set) -
+  /// shared by the (i) dialog and [inlineComparison] so the two stay in sync.
+  List<Widget> _comparisonRows(BuildContext context) {
+    final p = proposed;
     final substatTypes = [
       for (final type in substatDisplayOrder)
         if (result.aggregate.sub(type) != 0 ||
@@ -166,44 +182,49 @@ class BuildSummaryBanner extends StatelessWidget {
           type,
     ];
 
+    return [
+      if (p != null) ...[
+        _row(context, 'Shown Dmg', result.shownDamage, p.shownDamage,
+            formatSheetCompact),
+        _row(context, 'Shown HP', result.shownHealth, p.shownHealth,
+            formatSheetCompact),
+        _row(context, 'Calculated Dmg', result.totalDamage, p.totalDamage,
+            formatCompact),
+        _row(context, 'Calculated HP', result.totalHealth, p.totalHealth,
+            formatCompact),
+        _row(context, 'DPS', result.dps, p.dps, formatCompact),
+        _row(context, 'Lifesteal/sec', result.lifestealPerSecond,
+            p.lifestealPerSecond, formatCompact),
+        _row(context, 'Heal/sec', result.healPerSecond, p.healPerSecond,
+            formatCompact),
+        const Divider(height: 20),
+      ],
+      if (substatTypes.isEmpty)
+        const Text('No substats equipped.')
+      else
+        for (final type in substatTypes)
+          _row(
+            context,
+            type.label,
+            result.aggregate.sub(type),
+            p?.aggregate.sub(type),
+            (v) => formatStatValue(type, v),
+          ),
+    ];
+  }
+
+  void _showSubstats(BuildContext context) {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(p == null ? 'Substats' : 'Current -> Proposed'),
+        title: Text(proposed == null ? 'Substats' : 'Current -> Proposed'),
         content: SizedBox(
           width: 360,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (p != null) ...[
-                  row('Shown Dmg', result.shownDamage, p.shownDamage,
-                      formatSheetCompact),
-                  row('Shown HP', result.shownHealth, p.shownHealth,
-                      formatSheetCompact),
-                  row('Calculated Dmg', result.totalDamage, p.totalDamage,
-                      formatCompact),
-                  row('Calculated HP', result.totalHealth, p.totalHealth,
-                      formatCompact),
-                  row('DPS', result.dps, p.dps, formatCompact),
-                  row('Lifesteal/sec', result.lifestealPerSecond,
-                      p.lifestealPerSecond, formatCompact),
-                  row('Heal/sec', result.healPerSecond, p.healPerSecond,
-                      formatCompact),
-                  const Divider(height: 20),
-                ],
-                if (substatTypes.isEmpty)
-                  const Text('No substats equipped.')
-                else
-                  for (final type in substatTypes)
-                    row(
-                      type.label,
-                      result.aggregate.sub(type),
-                      p?.aggregate.sub(type),
-                      (v) => formatStatValue(type, v),
-                    ),
-              ],
+              children: _comparisonRows(context),
             ),
           ),
         ),
